@@ -2,7 +2,15 @@
 
 **让每个好球，留下来。** 把整场乒乓球视频，剪成值得回看的回合集锦。
 
-[下载种子版](https://rallycut-byc.pages.dev/#download) · [观看 30 秒内演示](https://rallycut-byc.pages.dev/#demo) · [中文使用指南](https://rallycut-byc.pages.dev/guide/)
+[下载种子版](https://rallycut-byc.pages.dev/#download) · [看软件界面](https://rallycut-byc.pages.dev/#workbench) · [看导出效果](https://rallycut-byc.pages.dev/#demo) · [中文指南](https://rallycut-byc.pages.dev/guide/)
+
+## 一整场，拆成一个个回合
+
+[![RallyCut 真实工作台：中间预览原片，右侧列出回合起止时间，底部绿色时间轴显示回合分布](site/public/media/rallycut-workbench.webp)](https://rallycut-byc.pages.dev/#workbench)
+
+**右侧逐个看回合，底部总览整场。** 点击回合回放，复核或调整起止点，勾选想保留的片段，再导出集锦。截图来自真实项目，包含分析结果与人工编辑，仍需复核。
+
+## 导出后的效果
 
 [![RallyCut 实际导出：乒乓球轨迹与回合编号](site/public/media/rallycut-preview.gif)](https://rallycut-byc.pages.dev/#demo)
 

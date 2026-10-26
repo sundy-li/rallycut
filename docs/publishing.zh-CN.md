@@ -20,15 +20,16 @@ Pages 默认公开，`noindex` 不是访问控制；源码和 Release 仍私有�
 
 `site/build.mjs` 只转换固定允许列表：`docs/README.md`、`getting-started.zh-CN.md`、`faq.zh-CN.md`、`releases.zh-CN.md`。技术报告与开发者文档不复制；链接需要仓库权限。
 
-用户本次明确要求公开一个 30 秒内演示，允许以下三个资源进入 Git 和公开页面：
+用户已明确批准以下产品展示资源进入 Git 和公开页面：30 秒内演示、预览 GIF、封面，以及用户提供的真实工作台截图。
 
 ```text
 site/public/media/rallycut-demo.mp4
 site/public/media/rallycut-preview.gif
 site/public/media/rallycut-poster.jpg
+site/public/media/rallycut-workbench.webp
 ```
 
-视频经真实应用导出器生成，叠加保存的球轨迹和回合编号，原声保留；网页版本压缩为 720p H.264，预览 GIF 为短片段。来源与复现命令见[实验记录](experiments.md)。不要将此例外扩大为原片、完整项目、标注库、其他截图或模型权重。站点不使用第三方字体、分析脚本、表单或前端访问令牌。
+视频经真实应用导出器生成，叠加保存的球轨迹和回合编号，原声保留；网页版本压缩为 720p H.264，预览 GIF 为短片段。来源与复现命令见[实验记录](experiments.md)。工作台截图仅裁去右侧终端与底部 Dock 边缘并压缩为 WebP，没有改动回合、统计或界面内容；截图包含分析与人工编辑，不作为准确率证据。README 与页面分别展示“软件里如何拆回合”和“导出后的效果”。不要将此例外扩大为原片、完整项目、标注库、其他截图或模型权重。站点不使用第三方字体、分析脚本、表单或前端访问令牌。
 
 演示 MP4 在生产 Pages 静态服务上缺少可用的 Range 响应，导致浏览器拖动回到开头。因此仅 `/media/rallycut-demo.mp4` 使用 Pages Function：从本站静态资源读取批准的视频，提供 GET / HEAD、单段 `206` 和越界 `416`；没有任意 URL、私有文件代理或访问令牌。`_routes.json` 把 Function 限定在这一个视频路径，其余页面仍静态托管。此端点计入 Pages Functions 的账户额度；请求上限以 Cloudflare 当前计划为准，不宣称无限免费。
 

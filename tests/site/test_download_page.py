@@ -92,6 +92,24 @@ def main():
                 print(f'PASS: {width}px, landing + four guides')
             page.set_viewport_size({'width': 1440, 'height': 1000})
             page.goto(base, wait_until='networkidle')
+            page.get_by_role('link', name='看软件如何拆回合').click()
+            assert page.evaluate('location.hash') == '#workbench'
+            image = page.locator('.workbench-figure img')
+            image.scroll_into_view_if_needed()
+            image.evaluate('(img) => img.decode()')
+            assert image.evaluate('(img) => [img.naturalWidth, img.naturalHeight]') == [2880, 1785]
+            page.locator('#workbench').screenshot(path=str(ARTIFACTS / 'workbench-desktop.png'))
+            with page.expect_popup() as opened:
+                page.locator('.workbench-image-link').click()
+            full_size = opened.value
+            full_size.wait_for_load_state('domcontentloaded')
+            assert full_size.url == base + '/media/rallycut-workbench.webp'
+            full_size.close()
+            page.set_viewport_size({'width': 390, 'height': 844})
+            page.locator('#workbench').screenshot(path=str(ARTIFACTS / 'workbench-mobile.png'))
+            assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+            page.set_viewport_size({'width': 1440, 'height': 1000})
+            page.evaluate('window.scrollTo(0, 0)')
             page.screenshot(path=str(ARTIFACTS / 'desktop.png'), full_page=True)
             assert page.locator('video').get_attribute('preload') == 'none'
             assert page.locator('video').get_attribute('autoplay') is None
@@ -144,7 +162,7 @@ def main():
             assert page.evaluate('location.hash') == '#main'
             assert not errors, errors
             browser.close()
-            print('PASS: video decodes, plays and seeks with CSP; download navigation, mobile keyboard and no page errors')
+            print('PASS: real workbench image loads, opens full-size and fits mobile; video plays and seeks with CSP; navigation, keyboard and no page errors')
             print(f'Artifacts: {ARTIFACTS}')
     finally:
         if server:

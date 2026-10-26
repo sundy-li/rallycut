@@ -19,7 +19,7 @@ const htmlFiles = output.filter(f => f.endsWith('.html'));
 
 test('only explicitly public pages and static assets are built', () => {
   const relative = output.map(f => path.relative(dist, f)).sort();
-  assert.deepEqual(relative, ['404.html', '_headers', '_routes.json', 'guide/faq.html', 'guide/getting-started.html', 'guide/index.html', 'guide/releases.html', 'icon.svg', 'index.html', 'media/rallycut-demo.mp4', 'media/rallycut-poster.jpg', 'media/rallycut-preview.gif', 'robots.txt', 'styles.css']);
+  assert.deepEqual(relative, ['404.html', '_headers', '_routes.json', 'guide/faq.html', 'guide/getting-started.html', 'guide/index.html', 'guide/releases.html', 'icon.svg', 'index.html', 'media/rallycut-demo.mp4', 'media/rallycut-poster.jpg', 'media/rallycut-preview.gif', 'media/rallycut-workbench.webp', 'robots.txt', 'styles.css']);
 });
 test('all local URLs resolve to a file and fragments resolve to an ID', async () => {
   for (const filename of htmlFiles) {
@@ -78,5 +78,21 @@ test('README stays concise and its demo and release links exist', async () => {
   assert.ok(readme.split('\n').length <= 50);
   assert.ok(readme.includes(config.releaseUrl));
   assert.ok(readme.includes('site/public/media/rallycut-preview.gif'));
+  assert.ok(readme.includes('site/public/media/rallycut-workbench.webp'));
+  assert.ok(readme.includes('#workbench'));
   assert.equal(/tt[\s_-]*cut|huji/i.test(readme), false);
+});
+test('real workbench is distinct from the exported demo and can be viewed full-size', async () => {
+  const html = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
+  assert.ok(html.includes('id="workbench"'));
+  assert.ok(html.includes('id="demo"'));
+  assert.ok(html.includes('href="#workbench"'));
+  assert.ok(html.includes('class="workbench-image-link" href="/media/rallycut-workbench.webp"'));
+  assert.ok(html.includes('aria-label="Open the full-size RallyCut workbench screenshot"'));
+  assert.ok(html.includes('width="2880" height="1785" loading="lazy" decoding="async"'));
+  for (const term of ['RALLY LIST', 'MATCH TIMELINE', 'REVIEW &amp; EXPORT', '分析与人工编辑']) assert.ok(html.includes(term), term);
+  const image = await fs.readFile(path.join(dist, 'media/rallycut-workbench.webp'));
+  assert.ok(image.length < 800 * 1024);
+  assert.equal(image.toString('ascii', 0, 4), 'RIFF');
+  assert.equal(image.toString('ascii', 8, 12), 'WEBP');
 });
