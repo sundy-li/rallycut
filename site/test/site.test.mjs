@@ -82,6 +82,18 @@ test('README stays concise and its demo and release links exist', async () => {
   assert.ok(readme.includes('site/public/media/rallycut-workbench-preview.gif'));
   assert.ok(readme.includes('#workbench'));
   assert.equal(/tt[\s_-]*cut|huji/i.test(readme), false);
+  assert.ok(readme.indexOf('rallycut-workbench-preview.gif') < readme.indexOf('rallycut-preview.gif'));
+  assert.ok(/<details>\s*<summary>补充演示：[\s\S]*rallycut-preview\.gif[\s\S]*<\/details>/.test(readme));
+});
+test('workbench is the primary hero video and exported highlights are a later secondary demo', async () => {
+  const html = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
+  const hero = html.match(/<section class="hero"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.ok(hero.includes('id="workbench-video"'));
+  assert.ok(hero.includes('primary-demo'));
+  assert.equal(hero.includes('id="export-demo-video"'), false);
+  assert.ok(html.indexOf('id="workbench-video"') < html.indexOf('id="export-demo-video"'));
+  assert.ok(/<section class="export-showcase"[\s\S]*secondary-demo[\s\S]*id="export-demo-video"/.test(html));
+  for (const label of ['先看主界面', '补充演示', '人工回合覆盖分析回合']) assert.ok(html.includes(label), label);
 });
 test('trimmed workbench recording replaces the screenshot without replacing the export demo', async () => {
   const html = await fs.readFile(path.join(dist, 'index.html'), 'utf8');

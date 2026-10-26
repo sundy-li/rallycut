@@ -135,6 +135,12 @@ def main():
                 print(f'PASS: {width}px, Chinese landing + four guides')
             page.set_viewport_size({'width': 1440, 'height': 1000})
             page.goto(base, wait_until='networkidle')
+            assert page.locator('video').first.get_attribute('id') == 'workbench-video'
+            assert page.locator('.hero video').count() == 1
+            assert page.locator('.hero #workbench-video').count() == 1
+            assert page.locator('#demo .secondary-demo').count() == 1
+            assert page.locator('#demo').evaluate('(el) => el.getBoundingClientRect().top > innerHeight')
+            assert page.locator('#workbench-video').evaluate('(el) => el.getBoundingClientRect().top < innerHeight')
             page.get_by_role('link', name='看软件如何拆回合').click()
             assert page.evaluate('location.hash') == '#workbench'
             result = check_video(page, '#workbench-video', 18.5, 18.8, 10)

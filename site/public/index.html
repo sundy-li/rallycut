@@ -21,30 +21,30 @@
       <div class="hero-copy">
         <p class="eyebrow"><span class="status-dot"></span> 少拖进度条，多留好回合</p>
         <h1 id="hero-title">整场比赛，<br><em>只留好回合。</em></h1>
-        <p class="hero-description">把一整场乒乓球视频，剪成值得回看的集锦。自动找出候选回合，回放复核、调整边界，再把球的轨迹和回合编号一起带进成片。</p>
+        <p class="hero-description">先看软件怎样拆回合：机器分析候选，人工回放、补漏、修正边界，再选择覆盖方式导出。也可以直接手动剪，让一整场比赛变成值得回看的集锦。</p>
         <p class="hero-zh">让每个好球，留下来。<span>识别回合 · 回看轨迹 · 本地导出</span></p>
         <div class="hero-actions"><a class="button button-primary" href="#download">下载种子版 <span aria-hidden="true">↗</span></a><a class="text-link" href="#workbench">看软件如何拆回合 →</a></div>
         <p class="microcopy">优先支持 macOS · 视频留在本机 · 最终结果由你决定</p>
       </div>
-      <figure class="demo-card" id="demo">
-        <div class="art-caption"><span>实际导出效果</span><span>29 秒 · 3 个回合</span></div>
-        <video id="export-demo-video" controls playsinline preload="none" poster="/media/rallycut-poster.jpg" aria-label="樊振东比赛素材的实际导出，包含橙色球轨迹和回合编号" aria-describedby="demo-caption">
-          <source src="/media/rallycut-demo.mp4" type="video/mp4">
-          浏览器不支持视频播放，请<a href="/media/rallycut-demo.mp4">下载演示 MP4</a>后观看。
-        </video>
-        <figcaption id="demo-caption"><strong>球的轨迹，也能留在成片里。</strong><span>橙色线条是球的运动轨迹，左上角是回合编号。<br>精选 3 个回合，由 RallyCut 实际导出，保留比赛原声。</span><span>樊振东比赛素材 · 真实导出 · 不是界面示意图</span></figcaption>
-        <a class="demo-download text-link" href="/media/rallycut-demo.mp4" download>下载 29 秒导出演示 ↗</a>
+      <figure class="demo-card primary-demo" id="workbench" aria-labelledby="workbench-title">
+        <div class="art-caption"><span>先看主界面，了解怎么用</span><span>约 19 秒 · 真实操作</span></div>
+        <video id="workbench-video" controls playsinline preload="none" width="1920" height="1128" poster="/media/rallycut-workbench-poster.webp" aria-label="首要展示：RallyCut 主界面操作录屏，展示原片回放、回合列表和时间轴" aria-describedby="workbench-caption"><source src="/media/rallycut-workbench.mp4" type="video/mp4">浏览器不支持视频播放，请<a href="/media/rallycut-workbench.mp4">下载操作录屏</a>后观看。</video>
+        <figcaption id="workbench-caption"><strong id="workbench-title">一整场，拆成一个个回合。</strong><span>右侧逐个看回合，底部总览整场，中间回放复核。<br>约 19 秒真实录屏，已剪去开头 1 秒；无音轨，回合仍需复核。</span></figcaption>
+        <a class="demo-download text-link" href="/media/rallycut-workbench.mp4" download>下载主界面操作录屏 ↗</a>
       </figure>
     </section>
-    <section class="workbench-showcase" id="workbench" aria-labelledby="workbench-title">
-      <div class="workbench-heading"><div><p class="eyebrow">真实软件操作录屏</p><h2 id="workbench-title">回合怎么拆，<br><em>打开软件就明白。</em></h2></div><div class="workbench-intro"><p>右侧逐个查看回合，底部总览整场分布。点击回合回放，调整起止点，再勾选你想保留的片段。</p><p>不是静态示意图，是实际工作台中的操作过程。</p></div></div>
-      <figure class="workbench-figure"><video id="workbench-video" controls playsinline preload="none" width="1920" height="1128" poster="/media/rallycut-workbench-poster.webp" aria-label="RallyCut 真实操作录屏，展示原片回放、回合列表和时间轴" aria-describedby="workbench-caption"><source src="/media/rallycut-workbench.mp4" type="video/mp4">浏览器不支持视频播放，请<a href="/media/rallycut-workbench.mp4">下载操作录屏</a>后观看。</video><figcaption id="workbench-caption"><span>约 19 秒真实录屏 · 已剪去开头 1 秒 · 无音轨 · 回合仍需复核</span><a class="text-link" href="/media/rallycut-workbench.mp4" download>下载操作录屏 ↗</a></figcaption></figure>
+    <section class="workbench-showcase" aria-labelledby="editing-title">
+      <div class="workbench-heading"><div><p class="eyebrow">从识别到修正，都在工作台里</p><h2 id="editing-title">机器先拆，<br><em>人工把关。</em></h2></div><div class="workbench-intro"><p>机器哪里剪得不对，就手动补回合、调整起止点。两份结果可以保留，导出时再决定采用哪份。</p><p>选择“人工回合覆盖分析回合”，以人工结果为准；重叠的分析回合整段跳过，不改项目时间轴。</p></div></div>
       <ol class="workbench-pointers"><li><span class="pointer-number">01 / 回合列表</span><h3>右侧，逐个看回合。</h3><p>查看每个回合的起止时间，点击回放，勾选要保留的片段。</p></li><li><span class="pointer-number">02 / 回合时间轴</span><h3>底部，一眼看整场。</h3><p>绿色片段展示全场回合分布，不必反复拖动长视频寻找。</p></li><li><span class="pointer-number">03 / 复核与导出</span><h3>看准了，再导出。</h3><p>在中间预览复核、调整边界，再导出集锦；需要时开启球轨迹和回合编号。</p><a class="text-link" href="#demo">看导出后的效果 →</a></li></ol>
     </section>
     <div class="principles"><span><b>01</b> 不用上传比赛视频</span><span><b>02</b> 剪辑结果由你复核</span><span><b>03</b> 轨迹可一起导出到 MP4</span></div>
     <section id="how-it-works" class="workflow" aria-labelledby="workflow-title">
       <div class="section-heading"><p class="eyebrow">从原片到集锦，只需三步</p><h2 id="workflow-title">找到回合，<br>留下精彩。</h2><p>先用一小段比赛试试。<br>不必一开始就处理整场素材。</p></div>
       <ol class="steps"><li><span class="step-number">01 / 导入</span><h3>把比赛放进来。</h3><p>导入本地视频，开始分析。候选回合会逐步出现在列表与时间轴中。</p></li><li><span class="step-number">02 / 复核</span><h3>挑出值得留的回合。</h3><p>回看球轨迹，修正起止点、补上漏掉的回合，或删掉误识别。改错了可以撤销、重做。</p></li><li><span class="step-number">03 / 导出</span><h3>让好球变成集锦。</h3><p>勾选回合，在导出栏开启“球轨迹”和“回合编号”，导出带原声的 MP4。一个回合、一段集锦，都可以。</p></li></ol>
+    </section>
+    <section class="export-showcase" id="demo" aria-labelledby="demo-title">
+      <div class="export-copy"><p class="eyebrow">补充演示 · 再看导出的效果</p><h2 id="demo-title">挑好回合，<br><em>成片长这样。</em></h2><p>了解软件怎么用以后，再看看导出的集锦。这里精选了 3 个回合，叠加橙色球轨迹和左上角的回合编号，保留比赛原声。</p><p class="export-note">轨迹和编号都是可选项；想只保留原画面，也可以。手动划回合不会自动生成球轨迹，需要先有相应分析数据。</p><a class="text-link" href="/guide/getting-started.html">查看剪辑与导出步骤 →</a></div>
+      <figure class="demo-card secondary-demo"><div class="art-caption"><span>实际导出效果</span><span>29 秒 · 3 个回合</span></div><video id="export-demo-video" controls playsinline preload="none" poster="/media/rallycut-poster.jpg" aria-label="补充展示：樊振东比赛素材的导出集锦，包含橙色球轨迹和回合编号" aria-describedby="demo-caption"><source src="/media/rallycut-demo.mp4" type="video/mp4">浏览器不支持视频播放，请<a href="/media/rallycut-demo.mp4">下载演示 MP4</a>后观看。</video><figcaption id="demo-caption"><strong>球的轨迹，也能留在成片里。</strong><span>橙色线条是球的运动轨迹，左上角是回合编号。<br>樊振东比赛素材 · 由 RallyCut 实际导出 · 保留比赛原声</span></figcaption><a class="demo-download text-link" href="/media/rallycut-demo.mp4" download>下载 29 秒导出演示 ↗</a></figure>
     </section>
     <section class="new-release" aria-labelledby="new-title"><div><p class="eyebrow">这次种子版，更新了这些</p><h2 id="new-title">剪辑更顺手，<br>好球更好留。</h2></div><ul><li>球轨迹、回合编号可以一起导出。</li><li>双击修改时间，支持快捷键、撤销与重做。</li><li>设置和快捷键说明集中在顶部入口。</li><li>重新分析时，保留人工添加和修正的回合。</li></ul><a class="text-link" href="/guide/releases.html">本版更新与限制 →</a></section>
     <section id="download" class="download" aria-labelledby="download-title">
