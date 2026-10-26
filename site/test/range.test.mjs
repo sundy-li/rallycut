@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { onRequest } from '../functions/media/rallycut-demo.mp4.js';
+import { onRequest as workbenchRequest } from '../functions/media/rallycut-workbench.mp4.js';
 
 const url = 'https://example.pages.dev/media/rallycut-demo.mp4';
 const fixture = new Uint8Array(Array.from({ length: 100 }, (_, i) => i));
@@ -22,6 +23,10 @@ async function fetchDemo({ method = 'GET', range, validator, assetStatus = 200 }
   } } });
   return { response, assetCalls };
 }
+
+test('both explicitly approved videos share the same tested range handler', () => {
+  assert.equal(workbenchRequest, onRequest);
+});
 
 test('only GET and HEAD are allowed; no remote URL or asset path can be supplied', async () => {
   const { response, assetCalls } = await fetchDemo({ method: 'POST' });

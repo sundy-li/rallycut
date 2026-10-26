@@ -94,7 +94,7 @@ UI 回归入口是 `tests/ui/test_workbench.py`，需 Playwright / Chrome 和其
 
 ## 测试证据与协作
 
-- 用户私有视频、权重、项目、截图不提交 Git、不上传。唯一例外是用户明确批准的产品展示：`site/public/media/rallycut-demo.mp4`（30 秒内）、其预览 GIF 和封面，以及用户提供用于 README / Pages 的工作台截图 `site/public/media/rallycut-workbench.webp`（裁去桌面边缘，不修改界面结果）；不能扩大为原片、项目或其他素材。完整私有素材回归通过显式环境变量启用，普通 CI 不得依赖它们或 `/tmp` 既有产物。
+- 用户私有视频、权重、项目、截图不提交 Git、不上传。唯一例外是用户明确批准的产品展示：`site/public/media/rallycut-demo.mp4`（30 秒内）、其预览 GIF 和封面，以及用户提供用于 README / Pages 的工作台录屏 `site/public/media/rallycut-workbench.mp4`（只剪去开头 1 秒、转码，不改操作顺序）、其预览 GIF 与视频封面；不能扩大为原片、项目或其他素材。完整私有素材回归通过显式环境变量启用，普通 CI 不得依赖它们或 `/tmp` 既有产物。
 - 回合准确率回测用私有标注库 `rallycut-labels`（`RALLYCUT_LABELS_DIR`）：`just eval cache` 一次新鲜推理写 L0 检测缓存并核对重放一致，`just eval run [--compare <基线> --gate]` 在缓存上重放当前 L1/L2 规则并按统一口径打分（`vision/evaluation.py` `score_labels`）。`neural_analysis.TrackingStage` 是新鲜分析与重放共用的唯一下游入口，不得另写简化重放；改 L0 相关代码（见 `detection_cache.L0_SOURCES`）后缓存自动失效。见 `docs/evaluation.md`。
 - 用户新标注的项目用 `just eval import <项目.json> --id <id>` 导入（只取 `manual-*` 与 `edited=true`；部分标注用 `--covered`），再 `eval cache --video <id>`；**第一次 `eval run` 是独立成绩，先原样报告**，之后才看错误、调规则。规则改动在全部视频上 `--compare --gate`，只保留不让任何视频变差的改动，参数取平台区，拒绝的尝试写进文档。
 - 用户已确认的标注口径（起点颠球或抛球都算对、擦网重发可选、发球失误算回合、递球 / 捡球不算、只比已标注范围）、当前基线、每个视频已查明的剩余错误和已拒绝的规则尝试都在 `docs/evaluation.md`，开始优化前先读，不要重复排查或重复尝试。新结论（用户回答、口径、被拒绝的尝试）要随手写回该文档或对应规则文档。

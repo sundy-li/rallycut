@@ -31,6 +31,7 @@ __pycache__/
 *.WEBM
 # Explicitly approved short product showcase; all other source media stay private.
 !site/public/media/rallycut-demo.mp4
+!site/public/media/rallycut-workbench.mp4
 *.rallycut.json
 *-rallycut.json
 .rallycut-feedback/

@@ -19,7 +19,7 @@ const htmlFiles = output.filter(f => f.endsWith('.html'));
 
 test('only explicitly public pages and static assets are built', () => {
   const relative = output.map(f => path.relative(dist, f)).sort();
-  assert.deepEqual(relative, ['404.html', '_headers', '_routes.json', 'guide/faq.html', 'guide/getting-started.html', 'guide/index.html', 'guide/releases.html', 'icon.svg', 'index.html', 'media/rallycut-demo.mp4', 'media/rallycut-poster.jpg', 'media/rallycut-preview.gif', 'media/rallycut-workbench.webp', 'robots.txt', 'styles.css']);
+  assert.deepEqual(relative, ['404.html', '_headers', '_routes.json', 'guide/faq.html', 'guide/getting-started.html', 'guide/index.html', 'guide/releases.html', 'icon.svg', 'index.html', 'media/rallycut-demo.mp4', 'media/rallycut-poster.jpg', 'media/rallycut-preview.gif', 'media/rallycut-workbench-poster.webp', 'media/rallycut-workbench-preview.gif', 'media/rallycut-workbench.mp4', 'robots.txt', 'styles.css']);
 });
 test('all local URLs resolve to a file and fragments resolve to an ID', async () => {
   for (const filename of htmlFiles) {
@@ -42,8 +42,8 @@ test('all local URLs resolve to a file and fragments resolve to an ID', async ()
 test('private beta access and dependency limitations remain visible', async () => {
   const html = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
   assert.ok(html.includes(config.releaseUrl));
-  assert.ok(html.includes('GitHub invitation required.'));
-  for (const term of ['Python 3.10+', 'FFmpeg', 'not Developer ID signed or notarized', 'Weights are not bundled', 'Chinese interface']) assert.ok(html.includes(term), term);
+  assert.ok(html.includes('下载需要 GitHub 仓库权限。'));
+  for (const term of ['Python 3.10+', 'FFmpeg', '正式发布者签名／Apple 公证', '不捆绑模型权重', '不支持匿名下载']) assert.ok(html.includes(term), term);
   assert.equal(/<script|<iframe|<form/i.test(html), false);
 });
 test('site has no private runtime artifacts, local source paths or unresolved markdown links', async () => {
@@ -52,7 +52,8 @@ test('site has no private runtime artifacts, local source paths or unresolved ma
     assert.equal(/\/Users\/|github_pat_|ghp_[A-Za-z0-9]+|<script/i.test(html), false, filename);
     assert.equal(/href="(?!https?:)[^"]+\.md"/.test(html), false, filename);
     assert.ok(html.includes('name="viewport"'));
-    assert.ok(/<html lang="(en|zh-CN)">/.test(html));
+    assert.ok(html.includes('<html lang="zh-CN">'));
+    assert.equal(/SEED PREVIEW|Inside the app|Get the seed preview|Skip to content|GUIDE|Page not found|Your browser does not support/.test(html), false, filename);
   }
 });
 test('CSP restricts the static site and excludes inline scripts', async () => {
@@ -65,7 +66,7 @@ test('CSP restricts the static site and excludes inline scripts', async () => {
 });
 test('real demo is accessible, opt-in to load, and within static-host file limits', async () => {
   const html = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
-  assert.ok(/<video controls playsinline preload="none"/.test(html));
+  assert.ok(/<video\b[^>]*\bcontrols playsinline preload="none"/.test(html));
   assert.ok(html.includes('src="/media/rallycut-demo.mp4"'));
   assert.ok(html.includes('poster="/media/rallycut-poster.jpg"'));
   assert.ok(html.includes('id="demo-caption"'));
@@ -78,21 +79,19 @@ test('README stays concise and its demo and release links exist', async () => {
   assert.ok(readme.split('\n').length <= 50);
   assert.ok(readme.includes(config.releaseUrl));
   assert.ok(readme.includes('site/public/media/rallycut-preview.gif'));
-  assert.ok(readme.includes('site/public/media/rallycut-workbench.webp'));
+  assert.ok(readme.includes('site/public/media/rallycut-workbench-preview.gif'));
   assert.ok(readme.includes('#workbench'));
   assert.equal(/tt[\s_-]*cut|huji/i.test(readme), false);
 });
-test('real workbench is distinct from the exported demo and can be viewed full-size', async () => {
+test('trimmed workbench recording replaces the screenshot without replacing the export demo', async () => {
   const html = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
-  assert.ok(html.includes('id="workbench"'));
-  assert.ok(html.includes('id="demo"'));
-  assert.ok(html.includes('href="#workbench"'));
-  assert.ok(html.includes('class="workbench-image-link" href="/media/rallycut-workbench.webp"'));
-  assert.ok(html.includes('aria-label="Open the full-size RallyCut workbench screenshot"'));
-  assert.ok(html.includes('width="2880" height="1785" loading="lazy" decoding="async"'));
-  for (const term of ['RALLY LIST', 'MATCH TIMELINE', 'REVIEW &amp; EXPORT', '分析与人工编辑']) assert.ok(html.includes(term), term);
-  const image = await fs.readFile(path.join(dist, 'media/rallycut-workbench.webp'));
-  assert.ok(image.length < 800 * 1024);
-  assert.equal(image.toString('ascii', 0, 4), 'RIFF');
-  assert.equal(image.toString('ascii', 8, 12), 'WEBP');
+  for (const term of ['id="workbench"', 'id="demo"', 'id="workbench-video"', 'id="export-demo-video"', 'src="/media/rallycut-workbench.mp4"', 'poster="/media/rallycut-workbench-poster.webp"', '已剪去开头 1 秒', '无音轨', '回合列表', '回合时间轴', '复核与导出']) assert.ok(html.includes(term), term);
+  assert.equal(html.includes('rallycut-workbench.webp'), false);
+  assert.equal((html.match(/<video /g) || []).length, 2);
+  assert.equal((html.match(/controls playsinline preload="none"/g) || []).length, 2);
+  assert.ok((await fs.stat(path.join(dist, 'media/rallycut-workbench.mp4'))).size < 20 * 1024 * 1024);
+  assert.ok((await fs.stat(path.join(dist, 'media/rallycut-workbench-preview.gif'))).size < 4 * 1024 * 1024);
+  const poster = await fs.readFile(path.join(dist, 'media/rallycut-workbench-poster.webp'));
+  assert.equal(poster.toString('ascii', 0, 4), 'RIFF');
+  assert.equal(poster.toString('ascii', 8, 12), 'WEBP');
 });

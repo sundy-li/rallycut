@@ -1,15 +1,15 @@
-"""Static-site browser QA; does not start the desktop app or read private projects.
-Run after `npm --prefix site run build`:
+"""Browser QA of the Chinese site and both real videos; no desktop app/private projects.
+After `npm --prefix site run build`:
   uv run --with playwright python tests/site/test_download_page.py
-Install Playwright Chromium if needed. Artifacts go to the system temp directory.
+Set RALLYCUT_SITE_URL to test a deployed site. Screenshots remain in system temp.
 """
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 import io
-import re
 import os
+import re
 import tempfile
 import threading
 
@@ -18,15 +18,17 @@ from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parents[2]
 DIST = ROOT / 'site/dist'
 ARTIFACTS = Path(tempfile.gettempdir()) / 'rallycut-download-site'
+MEDIA = {'/media/rallycut-demo.mp4', '/media/rallycut-workbench.mp4'}
 
 
 class StaticHandler(SimpleHTTPRequestHandler):
     def send_head(self):
-        # Local fixture only: production byte handling is tested separately in
-        # site/test/range.test.mjs and against the deployed Pages Function.
-        if urlsplit(self.path).path != '/media/rallycut-demo.mp4':
+        # Local fixture only; production handlers are covered by Node tests and
+        # live Pages QA. Only these two approved local assets can use this route.
+        media_path = urlsplit(self.path).path
+        if media_path not in MEDIA:
             return super().send_head()
-        data = (DIST / 'media/rallycut-demo.mp4').read_bytes()
+        data = (DIST / media_path.lstrip('/')).read_bytes()
         length = len(data)
         match = re.fullmatch(r'bytes=(\d*)-(\d*)', self.headers.get('Range', ''))
         partial = match is not None and bool(match[1] or match[2])
@@ -63,8 +65,48 @@ class StaticHandler(SimpleHTTPRequestHandler):
         try:
             super().copyfile(source, outputfile)
         except (BrokenPipeError, ConnectionResetError):
-            # Browsers cancel an initial media transfer when switching to playback.
-            pass
+            pass  # Browsers cancel initial transfers to issue seek requests.
+
+
+def check_video(page, selector, minimum, maximum, seek):
+    video = page.locator(selector)
+    assert video.get_attribute('preload') == 'none'
+    assert video.get_attribute('autoplay') is None
+    # Native media events avoid polling expression eval blocked by our CSP.
+    result = video.evaluate('''async (video, target) => {
+        video.muted = true;
+        await new Promise((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('Video load timed out')), 45000);
+            video.addEventListener('loadeddata', () => { clearTimeout(timer); resolve(); }, {once: true});
+            video.addEventListener('error', () => { clearTimeout(timer); reject(new Error('Video decode failed')); }, {once: true});
+            video.load();
+        });
+        const played = new Promise((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('Playback timed out')), 20000);
+            const onTime = () => {
+                if (video.currentTime > .3) {
+                    clearTimeout(timer); video.removeEventListener('timeupdate', onTime); resolve();
+                }
+            };
+            video.addEventListener('timeupdate', onTime);
+        });
+        await video.play();
+        await played;
+        video.pause();
+        await new Promise((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('Seek timed out')), 30000);
+            video.addEventListener('seeked', () => { clearTimeout(timer); resolve(); }, {once: true});
+            video.currentTime = target;
+        });
+        return {duration: video.duration, position: video.currentTime, width: video.videoWidth, height: video.videoHeight};
+    }''', seek)
+    assert minimum < result['duration'] < maximum, (selector, result)
+    # A seeked event alone can mean a failed seek clamped back to 0.
+    assert abs(result['position'] - seek) < .1, (selector, result)
+    video.scroll_into_view_if_needed()
+    video.screenshot(path=str(ARTIFACTS / f'{selector[1:]}-frame.png'))
+    print('PASS video:', selector, result)
+    return result
 
 
 def main():
@@ -79,7 +121,7 @@ def main():
     try:
         with sync_playwright() as pw:
             browser = pw.chromium.launch(headless=True)
-            page = browser.new_page()
+            page = browser.new_page(locale='zh-CN')
             page.on('pageerror', lambda e: errors.append(str(e)))
             routes = ['/', '/guide/', '/guide/getting-started.html', '/guide/faq.html', '/guide/releases.html']
             for width in [320, 375, 390, 768, 1024, 1440]:
@@ -88,69 +130,24 @@ def main():
                     response = page.goto(base + route, wait_until='networkidle')
                     assert response.status == 200, (width, route, response.status)
                     assert 'media-src' in response.headers['content-security-policy']
+                    assert page.locator('html').get_attribute('lang') == 'zh-CN'
                     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), (width, route, 'overflow')
-                print(f'PASS: {width}px, landing + four guides')
+                print(f'PASS: {width}px, Chinese landing + four guides')
             page.set_viewport_size({'width': 1440, 'height': 1000})
             page.goto(base, wait_until='networkidle')
             page.get_by_role('link', name='看软件如何拆回合').click()
             assert page.evaluate('location.hash') == '#workbench'
-            image = page.locator('.workbench-figure img')
-            image.scroll_into_view_if_needed()
-            image.evaluate('(img) => img.decode()')
-            assert image.evaluate('(img) => [img.naturalWidth, img.naturalHeight]') == [2880, 1785]
+            result = check_video(page, '#workbench-video', 18.5, 18.8, 10)
+            assert (result['width'], result['height']) == (1920, 1128)
             page.locator('#workbench').screenshot(path=str(ARTIFACTS / 'workbench-desktop.png'))
-            with page.expect_popup() as opened:
-                page.locator('.workbench-image-link').click()
-            full_size = opened.value
-            full_size.wait_for_load_state('domcontentloaded')
-            assert full_size.url == base + '/media/rallycut-workbench.webp'
-            full_size.close()
             page.set_viewport_size({'width': 390, 'height': 844})
             page.locator('#workbench').screenshot(path=str(ARTIFACTS / 'workbench-mobile.png'))
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             page.set_viewport_size({'width': 1440, 'height': 1000})
+            check_video(page, '#export-demo-video', 29, 30, 25)
             page.evaluate('window.scrollTo(0, 0)')
             page.screenshot(path=str(ARTIFACTS / 'desktop.png'), full_page=True)
-            assert page.locator('video').get_attribute('preload') == 'none'
-            assert page.locator('video').get_attribute('autoplay') is None
-            # Native media events avoid Playwright's polling expression eval,
-            # which the production CSP deliberately disallows.
-            page.locator('video').evaluate('''async (video) => {
-                video.muted = true;
-                const loaded = new Promise((resolve, reject) => {
-                    const timer = setTimeout(() => reject(new Error('Video load timed out')), 30000);
-                    video.addEventListener('loadeddata', () => { clearTimeout(timer); resolve(); }, {once: true});
-                    video.addEventListener('error', () => { clearTimeout(timer); reject(new Error('Video decode failed')); }, {once: true});
-                });
-                video.load();
-                await loaded;
-            }''')
-            assert 29 < page.locator('video').evaluate('(video) => video.duration') < 30
-            page.locator('video').evaluate('''async (video) => {
-                const played = new Promise((resolve, reject) => {
-                    const timer = setTimeout(() => reject(new Error('Playback timed out')), 15000);
-                    const onTime = () => {
-                        if (video.currentTime > .3) {
-                            clearTimeout(timer); video.removeEventListener('timeupdate', onTime); resolve();
-                        }
-                    };
-                    video.addEventListener('timeupdate', onTime);
-                });
-                await video.play();
-                await played;
-                video.pause();
-                await new Promise((resolve, reject) => {
-                    const timer = setTimeout(() => reject(new Error('Seek timed out')), 15000);
-                    video.addEventListener('seeked', () => { clearTimeout(timer); resolve(); }, {once: true});
-                    video.currentTime = 25;
-                });
-            }''')
-            # A seeked event can fire after a failed seek back to 0. Check the
-            # actual destination as well, including against real Pages hosting.
-            position = page.locator('video').evaluate('(video) => video.currentTime')
-            assert abs(position - 25) < .1, ('seek target', position)
-            page.screenshot(path=str(ARTIFACTS / 'video-frame.png'))
-            page.get_by_role('link', name='Get the seed preview').click()
+            page.get_by_role('link', name='下载种子版', exact=True).click()
             assert page.evaluate('location.hash') == '#download'
             assert '/v0.1.0-alpha.2' in page.locator('.release-link').get_attribute('href')
             page.set_viewport_size({'width': 390, 'height': 844})
@@ -162,7 +159,7 @@ def main():
             assert page.evaluate('location.hash') == '#main'
             assert not errors, errors
             browser.close()
-            print('PASS: real workbench image loads, opens full-size and fits mobile; video plays and seeks with CSP; navigation, keyboard and no page errors')
+            print('PASS: Chinese navigation, both videos play and seek precisely, mobile layout, keyboard and no page errors')
             print(f'Artifacts: {ARTIFACTS}')
     finally:
         if server:

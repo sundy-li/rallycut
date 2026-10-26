@@ -6,9 +6,9 @@
 
 ## 一整场，拆成一个个回合
 
-[![RallyCut 真实工作台：中间预览原片，右侧列出回合起止时间，底部绿色时间轴显示回合分布](site/public/media/rallycut-workbench.webp)](https://rallycut-byc.pages.dev/#workbench)
+[![RallyCut 真实操作录屏：回放原片、查看回合列表与时间轴](site/public/media/rallycut-workbench-preview.gif)](https://rallycut-byc.pages.dev/#workbench)
 
-**右侧逐个看回合，底部总览整场。** 点击回合回放，复核或调整起止点，勾选想保留的片段，再导出集锦。截图来自真实项目，包含分析结果与人工编辑，仍需复核。
+**右侧逐个看回合，底部总览整场。** 点击动图观看约 19 秒的真实操作录屏（已剪去开头 1 秒，无音轨）。点击回合回放，复核或调整起止点，勾选想保留的片段，再导出集锦。
 
 ## 导出后的效果
 

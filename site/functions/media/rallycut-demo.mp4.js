@@ -1,5 +1,6 @@
 // Pages' static MP4 response can omit byte-range support. Keep this handler
-// restricted to the approved 7.8 MB demo; it never accepts URLs or private paths.
+// restricted by routes to the approved showcase videos; it never accepts URLs
+// or private paths. The workbench recording reuses this handler.
 export async function onRequest({ request, env }) {
   if (!['GET', 'HEAD'].includes(request.method)) {
     return new Response(null, { status: 405, headers: { Allow: 'GET, HEAD' } });
