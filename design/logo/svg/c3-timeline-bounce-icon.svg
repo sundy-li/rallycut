@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="RallyCut logo candidate c3-timeline-bounce">
+  <path d="M26 100C44 158 88 158 114 96" fill="none" stroke="#C2EC94" stroke-width="9.5"
+        stroke-linecap="round" stroke-dasharray="10 12"/>
+  <circle cx="126" cy="88" r="18" fill="#F3F7EE"/>
+  <rect x="20" y="162" width="32" height="18" rx="9" fill="#C2EC94" opacity="0.3"/><rect x="62" y="162" width="24" height="18" rx="9" fill="#C2EC94" opacity="0.3"/><rect x="96" y="162" width="46" height="18" rx="9" fill="#F3F7EE" opacity="1"/><rect x="152" y="162" width="20" height="18" rx="9" fill="#C2EC94" opacity="0.3"/><rect x="182" y="162" width="28" height="18" rx="9" fill="#C2EC94" opacity="0.3"/>
+</svg>

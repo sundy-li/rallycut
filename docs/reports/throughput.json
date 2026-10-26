@@ -1,0 +1,109 @@
+{
+  "scope": "Short local experiments, calibration reused, no audio extraction in timing; not full task/accuracy benchmark",
+  "default_decoder": "opencv",
+  "hardware_default_enabled": false,
+  "results": [
+    {
+      "sample": "bridge-smoke.mp4",
+      "decoder": "opencv",
+      "frames": 299,
+      "decode_fps": 200.85094067740104,
+      "processing_fps": 142.46,
+      "hardware_active": false,
+      "pts_max_delta_seconds": 0.0,
+      "pixel_mean_abs_delta": 0.0,
+      "changed_detection_count_frames": 0,
+      "max_coordinate_delta_pixels": 0.0,
+      "same_tracks": true,
+      "same_rallies": true
+    },
+    {
+      "sample": "bridge-smoke.mp4",
+      "decoder": "pyav-software",
+      "frames": 299,
+      "decode_fps": 216.17158672534688,
+      "processing_fps": 144.29,
+      "hardware_active": false,
+      "pts_max_delta_seconds": 1.7763568394002505e-15,
+      "pixel_mean_abs_delta": 0.16593942901234568,
+      "changed_detection_count_frames": 5,
+      "max_coordinate_delta_pixels": 2.0452376748805166,
+      "same_tracks": false,
+      "same_rallies": false
+    },
+    {
+      "sample": "bridge-smoke.mp4",
+      "decoder": "videotoolbox",
+      "frames": 299,
+      "decode_fps": 223.11192708182514,
+      "processing_fps": 135.27,
+      "hardware_active": true,
+      "pts_max_delta_seconds": 1.7763568394002505e-15,
+      "pixel_mean_abs_delta": 0.16593942901234568,
+      "changed_detection_count_frames": 5,
+      "max_coordinate_delta_pixels": 2.0452376748805166,
+      "same_tracks": false,
+      "same_rallies": false
+    },
+    {
+      "sample": "repro-first30.mp4",
+      "decoder": "opencv",
+      "frames": 900,
+      "decode_fps": 167.33253525540349,
+      "processing_fps": 151.43,
+      "hardware_active": false,
+      "pts_max_delta_seconds": 0.0,
+      "pixel_mean_abs_delta": 0.0,
+      "changed_detection_count_frames": 0,
+      "max_coordinate_delta_pixels": 0.0,
+      "same_tracks": true,
+      "same_rallies": true
+    },
+    {
+      "sample": "repro-first30.mp4",
+      "decoder": "pyav-software",
+      "frames": 900,
+      "decode_fps": 89.85774732425308,
+      "processing_fps": 78.33,
+      "hardware_active": false,
+      "pts_max_delta_seconds": 7.105427357601002e-15,
+      "pixel_mean_abs_delta": 0.07686515667866942,
+      "changed_detection_count_frames": 7,
+      "max_coordinate_delta_pixels": 3.863967204781351,
+      "same_tracks": false,
+      "same_rallies": true
+    },
+    {
+      "sample": "repro-first30.mp4",
+      "decoder": "videotoolbox",
+      "frames": 900,
+      "decode_fps": 209.8355090730071,
+      "processing_fps": 144.78,
+      "hardware_active": true,
+      "pts_max_delta_seconds": 7.105427357601002e-15,
+      "pixel_mean_abs_delta": 0.07686515667866942,
+      "changed_detection_count_frames": 7,
+      "max_coordinate_delta_pixels": 3.863967204781351,
+      "same_tracks": false,
+      "same_rallies": true
+    }
+  ],
+  "preprocess_micro": [
+    {
+      "method": "old",
+      "ms_per_frame": 0.4963856966545185
+    },
+    {
+      "method": "new",
+      "ms_per_frame": 0.47948569331007695
+    },
+    {
+      "method": "new",
+      "ms_per_frame": 0.47594944674832124
+    },
+    {
+      "method": "old",
+      "ms_per_frame": 0.4908472233607123
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "is_example": true,
+  "video_sha256": "REPLACE_WITH_ACTUAL_SHA256",
+  "split": "test",
+  "source_permission": "REPLACE_WITH_PERMISSION_REFERENCE",
+  "boundary_policy": "serve-start-to-dead-ball-v1",
+  "rallies": [
+    {"id": "gt-001", "start": 12.4, "end": 24.8, "excitement": 4, "tags": ["occlusion"], "notes": "示例，不是真实标注"}
+  ]
+}

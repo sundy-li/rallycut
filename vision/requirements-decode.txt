@@ -1,0 +1,2 @@
+# Optional experimental macOS VideoToolbox decoder, not a default dependency.
+av==16.1.0

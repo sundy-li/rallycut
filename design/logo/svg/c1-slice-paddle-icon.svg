@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="RallyCut logo candidate c1-slice-paddle">
+  <g transform="rotate(52 33.2 165.57)">
+    <rect x="19.2" y="161.57" width="28" height="84" rx="14" fill="#C2EC94"/>
+  </g>
+  <path d="M112 104L171.09 93.58A60 60 0 1 1 136.4 49.19Z" fill="#C2EC94"/>
+  <circle cx="164.01" cy="63.37" r="17" fill="#F3F7EE"/>
+  <circle cx="200.01" cy="33.37" r="6" fill="#F3F7EE" opacity=".3"/>
+</svg>

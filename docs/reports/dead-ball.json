@@ -1,0 +1,170 @@
+{
+  "source_name": "DJI_20261020171009_0043_D.MP4",
+  "source_sha256": "31b70456c6d720446e71207a40b479ac98bd8e8487db2b95478bab7a10b18ac1",
+  "duration": 159.36,
+  "decoded_frames": 4776,
+  "candidate_count": 20,
+  "elapsed_seconds": 34.272,
+  "rally_state_version": "dead-ball-v1",
+  "net_region_source": "unavailable",
+  "user_reported_cases": [
+    {
+      "window": [
+        17,
+        18
+      ],
+      "description": "right-end out/catch/return"
+    },
+    {
+      "window": [
+        34,
+        35
+      ],
+      "description": "left receiver collects below-table ball"
+    }
+  ],
+  "events": [
+    {
+      "type": "dead_ball",
+      "time": 17.924533,
+      "confirmed_at": 18.151467,
+      "reason": "out_without_table_bounce",
+      "confidence": 0.83,
+      "signals": [
+        "crossed_table_midline",
+        "beyond_target_end",
+        "above_table",
+        "no_target_table_contact"
+      ],
+      "x": 0.893006,
+      "y": 0.266622
+    },
+    {
+      "type": "restart",
+      "time": 20.4204,
+      "confirmed_at": 21.3213,
+      "reason": "serve_own_half_bounce",
+      "confidence": 0.72,
+      "signals": [
+        "new_live_ball_evidence",
+        "dead_return_not_reused"
+      ],
+      "x": 0.336526,
+      "y": 0.384961
+    },
+    {
+      "type": "dead_ball",
+      "time": 34.340933,
+      "confirmed_at": 34.701333,
+      "reason": "below_table_stopped",
+      "confidence": 0.76,
+      "signals": [
+        "descending_from_table",
+        "below_table_plane",
+        "sustained_low_band",
+        "slowed_after_flight",
+        "no_fast_recovery"
+      ],
+      "x": 0.21875,
+      "y": 0.546882
+    },
+    {
+      "type": "restart",
+      "time": 36.5365,
+      "confirmed_at": 37.404033,
+      "reason": "serve_own_half_bounce",
+      "confidence": 0.72,
+      "signals": [
+        "new_live_ball_evidence",
+        "dead_return_not_reused"
+      ],
+      "x": 0.347678,
+      "y": 0.379208
+    },
+    {
+      "type": "dead_ball",
+      "time": 42.315567,
+      "confirmed_at": 42.5425,
+      "reason": "out_without_table_bounce",
+      "confidence": 0.83,
+      "signals": [
+        "crossed_table_midline",
+        "beyond_target_end",
+        "above_table",
+        "no_target_table_contact"
+      ],
+      "x": 0.145653,
+      "y": 0.349685
+    },
+    {
+      "type": "restart",
+      "time": 42.776067,
+      "confirmed_at": 42.976267,
+      "reason": "serve_own_half_bounce",
+      "confidence": 0.72,
+      "signals": [
+        "new_live_ball_evidence",
+        "dead_return_not_reused"
+      ],
+      "x": 0.41599,
+      "y": 0.386626
+    },
+    {
+      "type": "dead_ball",
+      "time": 59.232467,
+      "confirmed_at": 59.4594,
+      "reason": "out_without_table_bounce",
+      "confidence": 0.83,
+      "signals": [
+        "crossed_table_midline",
+        "beyond_target_end",
+        "above_table",
+        "no_target_table_contact"
+      ],
+      "x": 0.130079,
+      "y": 0.35852
+    },
+    {
+      "type": "restart",
+      "time": 68.635233,
+      "confirmed_at": 68.701967,
+      "reason": "serve_own_half_bounce",
+      "confidence": 0.72,
+      "signals": [
+        "new_live_ball_evidence",
+        "dead_return_not_reused"
+      ],
+      "x": 0.322637,
+      "y": 0.397999
+    }
+  ],
+  "candidate_intervals_near_cases": [
+    {
+      "start": 13.9144,
+      "end": 17.924533,
+      "end_reason": "out_without_table_bounce",
+      "end_event_time": 17.924533
+    },
+    {
+      "start": 20.4204,
+      "end": 27.493533,
+      "boundary_before": true,
+      "start_reason": "serve_restart"
+    },
+    {
+      "start": 30.7812,
+      "end": 34.340933,
+      "end_reason": "below_table_stopped",
+      "end_event_time": 34.340933
+    },
+    {
+      "start": 36.5365,
+      "end": 42.315567,
+      "end_reason": "out_without_table_bounce",
+      "end_event_time": 42.315567,
+      "boundary_before": true,
+      "start_reason": "serve_restart"
+    }
+  ],
+  "limitations": "No independent full-match labels; only two user-reported cases verified. Net geometry unavailable in this sample; no real net-fault acceptance claim."
+}

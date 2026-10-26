@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 196" role="img" aria-label="RallyCut logo lockup">
+  <g transform="translate(14 22) scale(0.55)">
+  <path d="M132.37 170.32L152.45 193.56Q158.01 199.99 152 206L152 206Q145.99 212.01 139.56 206.45L116.32 186.37Q109.51 180.49 115.88 174.12L120.12 169.88Q126.49 163.51 132.37 170.32Z" fill="#C2EC94"/>
+  <circle cx="78" cy="132" r="41" fill="#C2EC94"/>
+  <circle cx="78" cy="132" r="32" fill="none" stroke="#F3F7EE"
+        stroke-width="3" opacity=".28"/>
+  <path d="M118 116Q158 70 170 78" fill="none" stroke="#C2EC94" stroke-width="7"
+        stroke-linecap="round" stroke-dasharray="1 15"/>
+  <circle cx="188" cy="62" r="17" fill="#F3F7EE"/>
+  </g>
+  <text x="186" y="112" font-family="'Helvetica Neue', Helvetica, Inter, Arial, sans-serif" font-size="74" font-weight="700" letter-spacing="-2.4" fill="#F3F7EE">Rally<tspan fill="#C2EC94">Cut</tspan></text>
+  <text x="192" y="152" font-family="'Helvetica Neue', Helvetica, Inter, Arial, sans-serif" font-size="14" font-weight="500" letter-spacing="2.2" fill="#8FA2AB">让每个好球，留下来</text>
+</svg>

@@ -1,0 +1,173 @@
+{
+  "schema_version": 1,
+  "source_name": "DJI_20261020161432_0041_D.MP4",
+  "source_dimensions": [
+    1920,
+    1080
+  ],
+  "annotation_method": "assistant visual review of raw frames; NOT user-confirmed ground truth; exploratory and not fully blinded",
+  "revisions": ["480s initially marked not visible, corrected after prediction-assisted magnification revealed a real blurred ball over the black sofa; this makes the sample explicitly non-blinded."],
+  "sampling": "24 predeclared timestamps spanning beginning/middle/end; ambiguous frames excluded, not silently treated as negatives",
+  "tolerance_pixels": 16,
+  "samples": [
+    {
+      "requested_seconds": 15,
+      "t": 15.015,
+      "visibility": "uncertain",
+      "xy": null
+    },
+    {
+      "requested_seconds": 30,
+      "t": 29.996633333333335,
+      "visibility": "visible",
+      "xy": [
+        1010,
+        434
+      ]
+    },
+    {
+      "requested_seconds": 45,
+      "t": 45.011633333333336,
+      "visibility": "not_visible_in_playing_area",
+      "xy": null
+    },
+    {
+      "requested_seconds": 60,
+      "t": 59.99326666666667,
+      "visibility": "uncertain",
+      "xy": null
+    },
+    {
+      "requested_seconds": 75,
+      "t": 75.00826666666667,
+      "visibility": "uncertain",
+      "xy": null
+    },
+    {
+      "requested_seconds": 90,
+      "t": 89.9899,
+      "visibility": "not_visible_in_playing_area",
+      "xy": null
+    },
+    {
+      "requested_seconds": 105,
+      "t": 105.0049,
+      "visibility": "uncertain",
+      "xy": null
+    },
+    {
+      "requested_seconds": 120,
+      "t": 119.98653333333334,
+      "visibility": "not_visible_in_playing_area",
+      "xy": null
+    },
+    {
+      "requested_seconds": 135,
+      "t": 135.00153333333333,
+      "visibility": "visible",
+      "xy": [
+        1439,
+        347
+      ]
+    },
+    {
+      "requested_seconds": 150,
+      "t": 150.01653333333334,
+      "visibility": "uncertain",
+      "xy": null
+    },
+    {
+      "requested_seconds": 165,
+      "t": 164.99816666666666,
+      "visibility": "not_visible_in_playing_area",
+      "xy": null
+    },
+    {
+      "requested_seconds": 180,
+      "t": 180.01316666666668,
+      "visibility": "not_visible_in_playing_area",
+      "xy": null
+    },
+    {
+      "requested_seconds": 240,
+      "t": 240.00643333333335,
+      "visibility": "not_visible_in_playing_area",
+      "xy": null
+    },
+    {
+      "requested_seconds": 300,
+      "t": 299.9997,
+      "visibility": "not_visible_in_playing_area",
+      "xy": null
+    },
+    {
+      "requested_seconds": 360,
+      "t": 359.9929666666667,
+      "visibility": "visible",
+      "xy": [
+        1192,
+        344
+      ]
+    },
+    {
+      "requested_seconds": 480,
+      "t": 480.0128666666667,
+      "visibility": "visible",
+      "xy": [107, 466]
+    },
+    {
+      "requested_seconds": 600,
+      "t": 599.9994,
+      "visibility": "uncertain",
+      "xy": null
+    },
+    {
+      "requested_seconds": 720,
+      "t": 719.9859333333334,
+      "visibility": "visible",
+      "xy": [
+        1216,
+        78
+      ]
+    },
+    {
+      "requested_seconds": 840,
+      "t": 840.0058333333334,
+      "visibility": "not_visible_in_playing_area",
+      "xy": null
+    },
+    {
+      "requested_seconds": 960,
+      "t": 959.9923666666667,
+      "visibility": "not_visible_in_playing_area",
+      "xy": null
+    },
+    {
+      "requested_seconds": 1080,
+      "t": 1080.0122666666666,
+      "visibility": "visible",
+      "xy": [
+        870,
+        377
+      ]
+    },
+    {
+      "requested_seconds": 1200,
+      "t": 1199.9988,
+      "visibility": "not_visible_in_playing_area",
+      "xy": null
+    },
+    {
+      "requested_seconds": 1320,
+      "t": 1319.9853333333333,
+      "visibility": "uncertain",
+      "xy": null
+    },
+    {
+      "requested_seconds": 1440,
+      "t": 1440.0052333333333,
+      "visibility": "not_visible_in_playing_area",
+      "xy": null
+    }
+  ]
+}

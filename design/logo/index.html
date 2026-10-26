@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RallyCut · Logo 候选</title>
+<style>
+  :root {
+    --ink:#111417; --panel:#191d20; --line:#2a3033; --lime:#c2ec94;
+    --text:#e6e8e7; --muted:#838c8d; --mono:"SFMono-Regular",Menlo,Consolas,monospace;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--ink); color:var(--text);
+    font:15px/1.6 -apple-system,"SF Pro Text","Helvetica Neue",sans-serif; }
+  header { padding:56px 40px 24px; border-bottom:1px solid var(--line); }
+  h1 { margin:0; font-size:30px; letter-spacing:-.6px; }
+  h1 span { color:var(--lime); }
+  header p { margin:10px 0 0; color:var(--muted); max-width:62ch; }
+  .meta { margin-top:18px; display:flex; gap:10px; flex-wrap:wrap; font-family:var(--mono); font-size:11px;
+    letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+  .meta b { color:var(--lime); font-weight:600; }
+  .grid { display:grid; gap:1px; background:var(--line); grid-template-columns:repeat(auto-fit,minmax(430px,1fr)); }
+  .card { background:var(--ink); padding:28px 30px 30px; }
+  .head { display:flex; align-items:baseline; gap:10px; margin-bottom:20px; }
+  .idx { font-family:var(--mono); font-size:11px; color:var(--lime); letter-spacing:.14em;
+    border:1px solid var(--line); border-radius:4px; padding:2px 6px; }
+  .head h2 { margin:0; font-size:18px; letter-spacing:-.2px; }
+  .head em { color:var(--muted); font-style:normal; font-size:13px; }
+  .sel { margin-left:auto; font-family:var(--mono); font-size:10.5px; letter-spacing:.14em;
+    color:#1a2718; background:var(--lime); border-radius:4px; padding:3px 7px; }
+  .card.selected { box-shadow:inset 0 0 0 1px rgba(194,236,148,.45); }
+  .card.selected h2 { color:var(--lime); }
+  .stage { display:flex; gap:12px; align-items:stretch; }
+  .plate { background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    display:grid; place-items:center; }
+  .plate img { display:block; width:100%; height:100%; object-fit:contain; }
+  .big { flex:1; aspect-ratio:1; padding:26px; border-radius:22px; }
+  .side { display:flex; flex-direction:column; gap:12px; }
+  .sm { width:76px; height:76px; padding:10px; border-radius:14px; }
+  .xs { width:76px; height:42px; padding:6px 10px; border-radius:10px; }
+  .fav { width:76px; height:42px; padding:6px 10px; border-radius:10px; background:#0b0e10; }
+  .lockup { width:100%; margin-top:18px; background:var(--panel); border:1px solid var(--line);
+    border-radius:12px; padding:6px; }
+  .line { color:#c9d0cd; margin:18px 0 12px; }
+  ul { margin:0; padding:0; list-style:none; font-size:13.5px; }
+  li { padding-left:18px; position:relative; color:var(--muted); }
+  li::before { position:absolute; left:0; font-family:var(--mono); }
+  .pro::before { content:"+"; color:var(--lime); }
+  .con::before { content:"−"; color:#efb8a9; }
+  footer { padding:34px 40px 60px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+  code { font-family:var(--mono); color:var(--lime); background:#0b0e10; padding:1px 5px; border-radius:4px; }
+</style></head>
+<body>
+<header>
+  <h1>RallyCut <span>logo 候选</span></h1>
+  <p>沿用现有应用图标的调性：深色底 <code>#111417</code> + 青柠 <code>#c2ec94</code> + 奶白 <code>#f3f7ee</code>。
+  六个方向：两个说「球」、两个说「切」、一个说「时间轴」、一个只在字上做文章。</p>
+  <div class="meta"><span>全部纯路径 SVG，无 mask / clipPath / 位图</span>
+  <span>尺寸 <b>240×240</b></span><span>锁定词标 <b>660×200</b></span></div>
+</header>
+<div class="grid">
+  <section class="card">
+    <div class="head">
+      <span class="idx">C1</span>
+      <h2>Slice Paddle</h2><em>一口切</em>
+      
+    </div>
+    <div class="stage">
+      <div class="plate big"><img src="svg/c1-slice-paddle-icon.svg" alt="Slice Paddle"></div>
+      <div class="side">
+        <div class="plate sm"><img src="svg/c1-slice-paddle-icon.svg" alt=""></div>
+        <div class="plate xs"><img src="svg/c1-slice-paddle-icon.svg" alt=""></div>
+        <div class="plate fav"><img src="svg/c1-slice-paddle-icon.svg" alt=""></div>
+      </div>
+    </div>
+    <img class="lockup" src="svg/c1-slice-paddle-lockup.svg" alt="Slice Paddle 横版组合">
+    <p class="line">球拍咬掉一口，球正好在缺口里——「Cut」变成了一个动作，也是一张脸。</p>
+    <ul><li class="pro">最活泼、最有记忆点；小尺寸仍是一个圆加一个球。</li><li class="con">容易被读成吃豆人 / 表情，球拍感取决于手柄。</li></ul>
+  </section>
+  <section class="card">
+    <div class="head">
+      <span class="idx">C2</span>
+      <h2>Play Ball</h2><em>开球即播放</em>
+      
+    </div>
+    <div class="stage">
+      <div class="plate big"><img src="svg/c2-play-ball-icon.svg" alt="Play Ball"></div>
+      <div class="side">
+        <div class="plate sm"><img src="svg/c2-play-ball-icon.svg" alt=""></div>
+        <div class="plate xs"><img src="svg/c2-play-ball-icon.svg" alt=""></div>
+        <div class="plate fav"><img src="svg/c2-play-ball-icon.svg" alt=""></div>
+      </div>
+    </div>
+    <img class="lockup" src="svg/c2-play-ball-lockup.svg" alt="Play Ball 横版组合">
+    <p class="line">球的负空间就是播放键：乒乓球 × 视频，两个语义一次说完。</p>
+    <ul><li class="pro">最小、最像 app 图标，16px 也认得出；天然可做播放动画。</li><li class="con">没有「剪辑」的手感，稍偏「播放器」。</li></ul>
+  </section>
+  <section class="card selected">
+    <div class="head">
+      <span class="idx">C3</span>
+      <h2>Timeline Bounce</h2><em>回合时间轴</em>
+      <span class="sel">已选定</span>
+    </div>
+    <div class="stage">
+      <div class="plate big"><img src="svg/c3-timeline-bounce-icon.svg" alt="Timeline Bounce"></div>
+      <div class="side">
+        <div class="plate sm"><img src="svg/c3-timeline-bounce-icon.svg" alt=""></div>
+        <div class="plate xs"><img src="svg/c3-timeline-bounce-icon.svg" alt=""></div>
+        <div class="plate fav"><img src="svg/c3-timeline-bounce-icon.svg" alt=""></div>
+      </div>
+    </div>
+    <img class="lockup" src="svg/c3-timeline-bounce-lockup.svg" alt="Timeline Bounce 横版组合">
+    <p class="line">球的飞行轨迹压在剪辑时间轴上，高亮的那一段就是留下的回合。</p>
+    <ul><li class="pro">直接对应界面本身（时间轴 + 回合），信息量最大。</li><li class="con">元素最多，超过 32px 才开始舒服；做成图标要简化。</li></ul>
+  </section>
+  <section class="card">
+    <div class="head">
+      <span class="idx">C4</span>
+      <h2>Cut Ball</h2><em>切片球</em>
+      
+    </div>
+    <div class="stage">
+      <div class="plate big"><img src="svg/c4-cut-ball-icon.svg" alt="Cut Ball"></div>
+      <div class="side">
+        <div class="plate sm"><img src="svg/c4-cut-ball-icon.svg" alt=""></div>
+        <div class="plate xs"><img src="svg/c4-cut-ball-icon.svg" alt=""></div>
+        <div class="plate fav"><img src="svg/c4-cut-ball-icon.svg" alt=""></div>
+      </div>
+    </div>
+    <img class="lockup" src="svg/c4-cut-ball-lockup.svg" alt="Cut Ball 横版组合">
+    <p class="line">球被切开、两半错位，切面留一道青柠边——最字面的「cut」。</p>
+    <ul><li class="pro">图形语言最当代，做徽标/贴纸/动效都很好用。</li><li class="con">需要解释才看得出「球」；偏抽象。</li></ul>
+  </section>
+  <section class="card">
+    <div class="head">
+      <span class="idx">C5</span>
+      <h2>Classic Serve</h2><em>经典发球</em>
+      
+    </div>
+    <div class="stage">
+      <div class="plate big"><img src="svg/c5-classic-serve-icon.svg" alt="Classic Serve"></div>
+      <div class="side">
+        <div class="plate sm"><img src="svg/c5-classic-serve-icon.svg" alt=""></div>
+        <div class="plate xs"><img src="svg/c5-classic-serve-icon.svg" alt=""></div>
+        <div class="plate fav"><img src="svg/c5-classic-serve-icon.svg" alt=""></div>
+      </div>
+    </div>
+    <img class="lockup" src="svg/c5-classic-serve-lockup.svg" alt="Classic Serve 横版组合">
+    <p class="line">球拍 + 球 + 虚线飞行轨迹，是这个品类最不需要解释的组合。</p>
+    <ul><li class="pro">一眼就懂是乒乓；对普通用户最安全。</li><li class="con">同类产品用得多，个性最弱；小尺寸元素会糊。</li></ul>
+  </section>
+  <section class="card">
+    <div class="head">
+      <span class="idx">C6</span>
+      <h2>Type Slash</h2><em>字里带刀</em>
+      
+    </div>
+    <div class="stage">
+      <div class="plate big"><img src="svg/c6-type-slash-icon.svg" alt="Type Slash"></div>
+      <div class="side">
+        <div class="plate sm"><img src="svg/c6-type-slash-icon.svg" alt=""></div>
+        <div class="plate xs"><img src="svg/c6-type-slash-icon.svg" alt=""></div>
+        <div class="plate fav"><img src="svg/c6-type-slash-icon.svg" alt=""></div>
+      </div>
+    </div>
+    <img class="lockup" src="svg/c6-type-slash-lockup.svg" alt="Type Slash 横版组合">
+    <p class="line">整个字标被一条斜切带穿过，切面泛青柠光——剪辑感写在名字里。</p>
+    <ul><li class="pro">不用解释图标，信息全在字上；做标题、海报、启动画面很帅。</li><li class="con">不能当独立图标用，必须配一个符号版。</li></ul>
+  </section>
+</div>
+<footer>
+  由 <code>generate.py</code> 生成：改几何后重跑即可覆盖 <code>svg/</code>。
+  词标暂用系统字体渲染，定稿后需转成轮廓路径；浅底版 / 单色版也等定稿再补。
+</footer>
+</body></html>

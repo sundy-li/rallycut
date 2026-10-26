@@ -1,0 +1,84 @@
+{
+  "evidence": "Fixed full-frame source input: fresh 210-second raw-detection A/B, fresh full-length corrected inference. Current concurrent input path: separate fresh 210-second inference, not raw A/B.",
+  "scored_frames_ab": 6294,
+  "raw_predictions_identical": true,
+  "ab_tracks_identical": true,
+  "full_decoded_frames": 56756,
+  "full_scored_frames": 56754,
+  "full_tracks_identical_to_prior_project": true,
+  "retained_tracks": 941,
+  "invalid_prefix_removed": true,
+  "feedback_statuses": [
+    "pending",
+    "pending",
+    "pending",
+    "pending",
+    "pending"
+  ],
+  "feedback_revisions": [
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
+  "runtime_digest": "a7c87cd702e422066d5a9b4057de4b88dfcfb3870d6a7130e778df699e2681a4",
+  "activity_version": "perspective-activity-v2",
+  "old_endings": [
+    153.5534,
+    162.395567,
+    170.837333,
+    184.317467
+  ],
+  "corrected_ranges": [
+    {
+      "start": 150.3303,
+      "end": 154.420933,
+      "end_reason": "ball_settled"
+    },
+    {
+      "start": 158.9389,
+      "end": 163.416467,
+      "end_reason": "activity_gap"
+    },
+    {
+      "start": 168.515133,
+      "end": 171.704867,
+      "end_reason": "ball_settled"
+    },
+    {
+      "start": 174.3543,
+      "end": 177.9977,
+      "end_reason": "activity_gap"
+    },
+    {
+      "start": 181.8618,
+      "end": 188.154633,
+      "end_reason": "ball_settled"
+    }
+  ],
+  "current_input_ranges": [
+    {
+      "start": 150.3303,
+      "end": 154.420933
+    },
+    {
+      "start": 158.9389,
+      "end": 163.416467
+    },
+    {
+      "start": 168.515133,
+      "end": 171.704867
+    },
+    {
+      "start": 174.3543,
+      "end": 177.9977
+    },
+    {
+      "start": 181.8618,
+      "end": 188.154633
+    }
+  ],
+  "current_input_scored_frames": 6294,
+  "limitations": "Activity boundaries, not net/out adjudication; no independent full-match accuracy claim; current crop/backend work not part of raw-parity A/B."
+}

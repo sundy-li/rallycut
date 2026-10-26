@@ -1,0 +1,43 @@
+.app-crash {
+  width: min(560px, calc(100% - 48px));
+  min-height: 100vh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  color: #e6e8e7;
+  background: #111417;
+}
+
+.app-crash h1 {
+  margin-top: 12px;
+  font-size: 30px;
+  letter-spacing: -0.8px;
+}
+
+.app-crash p {
+  margin-top: 14px;
+  color: #a5adad;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.app-crash code {
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px 12px;
+  color: #d0a28f;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border: 1px solid #4b3932;
+  border-radius: 8px;
+  background: #1e1917;
+}
+
+.app-crash .button {
+  margin-top: 20px;
+}

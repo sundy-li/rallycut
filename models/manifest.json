@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "default_detector": "blurball-pretrained-v1",
+  "models": [
+    {
+      "id": "blurball-pretrained-v1",
+      "kind": "table-tennis-specialized-pretrained-multiframe-heatmap",
+      "upstream": "https://github.com/cogsys-tuebingen/blurball",
+      "commit": "2f0f5496f7ba4b5b1a36790749935121b2ce972d",
+      "source_license": "MIT; retained NTT / Microsoft / HRNet notices under vision/vendor/blurball",
+      "weights_url": "https://cloud.cs.uni-tuebingen.de/public.php/dav/files/6Z8TpM3sXRKHzGC/blurball_best",
+      "weights_sha256": "3545206c7155194ea654899d33579c88c9fd8e82c632cbdbae3b0c0ec3f2985f",
+      "weights_bytes": 6156034,
+      "weights_license": "Independent weight redistribution terms not explicitly stated on official share; not cleared for bundling/commercial redistribution",
+      "weights_bundled": false,
+      "installation": "explicit just setup-model; local evaluation only; no runtime download",
+      "decoder": {"default":"opencv","optional":"videotoolbox via av==16.1.0, macOS only, explicit opt-in","hardware_verification":"allow_software_fallback=False and codec_context.is_hwaccel","warning":"PyAV RGB conversion is not bit-exact to OpenCV; A/B gains not stable, candidate changes require review"},
+      "telemetry": "actual completed-frame recent/average FPS; source FPS is labeled separately; job wall-clock includes preparation",
+      "table_policy": {"default":"optional","ball_detection":"full-frame, no prepass and no table ROI gating","off":"no geometry attempts","precalibrate":"explicit legacy search; failure warns, ball detection continues","unknown_geometry":"empty bounds, no invented out/net events","camera_cuts":"immutable per-frame snapshots; clear geometry, split temporal inputs/tracks/rallies"},
+      "rally_rules": {"default":"dead-ball-v1","comparison":"explicit legacy","events":"out_without_table_bounce, below_table_stopped, held_after_flight, net_drop_same_side; wait for serve or reciprocal play","perspective_activity":"perspective-activity-v2: toss/reciprocal-motion qualification; local horizontal recovery cancels pending settling; end at observed confirmation, never backdate to slow-window start; not net/out adjudication","side_transit":"side-transit-v4 (strong transit >=1.0 table widths/s): trusted side-view geometry only; episodes start at a fast low cross-table transit (optional end-of-table serve toss; a high and only moderately fast paddle return cannot open one; start = earlier of toss-0.2 s and first transit-1.3 s; a lone strong transit above 0.8 table heights is a return, not a serve fault), continue on further transits within 1.2 s (far player may be out of frame), end transit_gap; slow/high return lobs excluded; no audio; not net/out adjudication","frame_serve":"frame-serve-v8: a toss-less episode with one ball run and no other motion (lone flight) is dropped; a high ball travelling >=0.4 W across is not a toss; no toss and the ball entered from the frame edge <=1.5 s before: not a serve; a frame-rule episode is one rally that the visual tail trim may not end before its last stroke; v7: the start moves back over a directly preceding chain of soft horizontal runs (>=0.08 W, >=0.11 S, gaps <=0.8 s) with >=1 direction reversal (soft serve / pushes before the first fast stroke; one-way carry does not count); a fast stroke within 0.5 s after a slow drift keeps the rally; a steep high ball within 0.8 s of in-play motion is not a new toss; v5: a >=1.0 s drift slower than 0.33 S after the strokes ends the rally (ball rolling / carried back); every non-side segment (perspective boxes included) when ball runs are mostly horizontal and >=40 runs calibrate S/W; perspective-activity-v2 only as fallback; serve-prep bounce burst (>=3 alternating short vertical runs) within 8 s before the serve on the server side starts the rally (start_reason=serve_prep); a lone jump between still balls is not a stroke; stroke_gap is not a net/out call; no audio","play_area":"play-area-v1: tracks with no stroke whose median lies >0.2 L outside the local (+-45 s) 5-95% extent of stroke-track points get off_play=true; self-calibrated physical frame units, no table needed; display hint only, never dropped, not read by rally rules","limits":"heuristic; side-view geometric dead-ball rules and optional perspective activity are distinct; net rules require trustworthy net geometry; reported 0043/0045 cases checked, not full accuracy acceptance"},
+      "runtime": "Python 3.12; torch 2.8.0; MPS preferred, CPU supported; weights_only=True and strict state_dict loading",
+      "input": "3 consecutive unique RGB frames, ImageNet normalization, aspect-preserving 512x288 affine resize",
+      "inference": {"step": 3, "batch_windows": 4, "heatmap_threshold": 0.7, "outputs_per_window": 3, "pipeline": true, "precision": "fp32", "optional_precision": "fp16 on MPS only", "queue_depth": 2},
+      "optimization_source": {
+        "checkout": "local ~/work/blurball; not required at runtime",
+        "commit": "108e4f3902d3665a8cdb6ab637c1b3946e929b4e",
+        "includes_uncommitted_worktree_changes_at_initial_inspection": true,
+        "verified_source_commit_after_user_commit": "f895ffdce459bf9ae0bfb5a0cb4ef5d1746ee5fc",
+        "source_hashes": {
+          "src/runners/inference.py": "eea4c6ba43e2ed7c74ac46b2f3bb5922d79523f4fe93269a5658cbe722282090",
+          "src/detectors/blurball_detector.py": "6d53acf4945abe96db6cc7ee8ceea81d35424420aabe5ec7f2a3cf8d571fb9ac",
+          "src/detectors/blurball_postprocessor.py": "02df04713ce12c2a85581f17f77a5152ba7c53bcf974d800fe5920cd3cac1f11"
+        },
+        "adapted": "bounded decode/main-thread GPU/CPU postprocess pipeline, compact uint8 inputs, batch normalization, optional half precision",
+        "preserved": "RGB affine preprocessing, source PTS, SHA-256 / weights_only safe loading, rally protocol and no automatic CPU/classical fallback on failure"
+      },
+      "training_data": "Author-provided table-tennis / motion-blur checkpoint; see upstream paper and dataset. No private user video uploaded or used for training.",
+      "limitations": ["rally segmentation still heuristic", "table ROI calibration still blue/purple-table based", "no guaranteed cross-domain accuracy", "final 1-2 frames are unscored if an incomplete temporal window remains"]
+    },
+    {
+      "id": "classical-av-v1",
+      "kind": "experimental-classical-vision-audio-baseline",
+      "weights": null,
+      "default": false,
+      "selection": "explicit --detector classical-av-v1 for comparison; never automatic fallback"
+    }
+  ],
+  "retired": [{"id": "mock-v1", "production_enabled": false}]
+}

@@ -1,0 +1,2 @@
+# Windows GPU acceleration for the ONNX backend (DirectML works on NVIDIA/AMD/Intel).
+onnxruntime-directml>=1.20

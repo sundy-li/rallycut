@@ -1,0 +1,151 @@
+{
+  "source_name": "DJI_20261020171009_0043_D.MP4",
+  "evidence": "fresh inference on full original 0043, not project conversion",
+  "compared_source_frames": 4776,
+  "changed_raw_detection_frames": 0,
+  "no_roi_points_dropped": true,
+  "decoded_frames": 4776,
+  "sampled_frames": 4776,
+  "track_count": 89,
+  "table_mode": "optional",
+  "table_segments": [
+    {
+      "start": 0.0,
+      "end": 3.003,
+      "bounds": [],
+      "net_region": [],
+      "method": "unavailable"
+    },
+    {
+      "start": 3.003,
+      "end": 159.36,
+      "bounds": [
+        0.186458,
+        0.368519,
+        0.852083,
+        0.492593
+      ],
+      "net_region": [],
+      "method": "side-color-rim"
+    }
+  ],
+  "rally_events": [
+    {
+      "type": "dead_ball",
+      "time": 17.924533,
+      "confirmed_at": 18.151467,
+      "reason": "out_without_table_bounce",
+      "confidence": 0.83,
+      "signals": [
+        "crossed_table_midline",
+        "beyond_target_end",
+        "above_table",
+        "no_target_table_contact"
+      ],
+      "x": 0.893006,
+      "y": 0.266622
+    },
+    {
+      "type": "restart",
+      "time": 20.4204,
+      "confirmed_at": 21.3213,
+      "reason": "serve_own_half_bounce",
+      "confidence": 0.72,
+      "signals": [
+        "new_live_ball_evidence",
+        "dead_return_not_reused"
+      ],
+      "x": 0.336526,
+      "y": 0.384961
+    },
+    {
+      "type": "dead_ball",
+      "time": 34.340933,
+      "confirmed_at": 34.701333,
+      "reason": "below_table_stopped",
+      "confidence": 0.76,
+      "signals": [
+        "descending_from_table",
+        "below_table_plane",
+        "sustained_low_band",
+        "slowed_after_flight",
+        "no_fast_recovery"
+      ],
+      "x": 0.21875,
+      "y": 0.546882
+    },
+    {
+      "type": "restart",
+      "time": 36.5365,
+      "confirmed_at": 37.404033,
+      "reason": "serve_own_half_bounce",
+      "confidence": 0.72,
+      "signals": [
+        "new_live_ball_evidence",
+        "dead_return_not_reused"
+      ],
+      "x": 0.347678,
+      "y": 0.379208
+    },
+    {
+      "type": "dead_ball",
+      "time": 42.315567,
+      "confirmed_at": 42.5425,
+      "reason": "out_without_table_bounce",
+      "confidence": 0.83,
+      "signals": [
+        "crossed_table_midline",
+        "beyond_target_end",
+        "above_table",
+        "no_target_table_contact"
+      ],
+      "x": 0.145653,
+      "y": 0.349685
+    },
+    {
+      "type": "restart",
+      "time": 42.776067,
+      "confirmed_at": 42.976267,
+      "reason": "serve_own_half_bounce",
+      "confidence": 0.72,
+      "signals": [
+        "new_live_ball_evidence",
+        "dead_return_not_reused"
+      ],
+      "x": 0.41599,
+      "y": 0.386626
+    },
+    {
+      "type": "dead_ball",
+      "time": 59.232467,
+      "confirmed_at": 59.4594,
+      "reason": "out_without_table_bounce",
+      "confidence": 0.83,
+      "signals": [
+        "crossed_table_midline",
+        "beyond_target_end",
+        "above_table",
+        "no_target_table_contact"
+      ],
+      "x": 0.130079,
+      "y": 0.35852
+    },
+    {
+      "type": "restart",
+      "time": 68.635233,
+      "confirmed_at": 68.701967,
+      "reason": "serve_own_half_bounce",
+      "confidence": 0.72,
+      "signals": [
+        "new_live_ball_evidence",
+        "dead_return_not_reused"
+      ],
+      "x": 0.322637,
+      "y": 0.397999
+    }
+  ],
+  "camera_cuts": 0,
+  "processing_fps": 130.09,
+  "analysis_fps": 127.64,
+  "limitations": "Raw model parity, not independent full-match accuracy. No geometry means no geometric dead-ball claim."
+}

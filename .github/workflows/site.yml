@@ -1,0 +1,41 @@
+name: Download site
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'site/**'
+      - 'docs/**'
+      - 'design/logo/final/**'
+      - '.github/workflows/site.yml'
+  pull_request:
+    paths:
+      - 'site/**'
+      - 'docs/**'
+      - 'design/logo/final/**'
+      - '.github/workflows/site.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm --prefix site ci
+      - run: npm --prefix site run build
+      - run: npm --prefix site test
+      - uses: actions/upload-artifact@v4
+        with:
+          name: download-site
+          path: site/dist
+          retention-days: 7
+          if-no-files-found: error

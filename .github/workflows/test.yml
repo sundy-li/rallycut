@@ -1,0 +1,67 @@
+name: Test
+on:
+  workflow_dispatch:
+  push:
+    branches: ['**']
+    paths-ignore:
+      - 'docs/**'
+      - 'site/**'
+      - 'design/**'
+      - '*.md'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - 'site/**'
+      - 'design/**'
+      - '*.md'
+permissions:
+  contents: read
+jobs:
+  local-pipeline:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: extractions/setup-just@v2
+      - name: Install media tools
+        run: command -v ffmpeg || HOMEBREW_NO_AUTO_UPDATE=1 brew install ffmpeg
+      - run: npm --prefix frontend ci
+      - run: python -m venv .venv && .venv/bin/python -m pip install -r vision/requirements.txt
+      - run: just test
+
+  windows-build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: extractions/setup-just@v2
+      - run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
+      - run: npm --prefix frontend ci
+      - name: Build Windows package
+        shell: bash
+        run: just package-windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: build/release/*
+          retention-days: 7
+          if-no-files-found: error

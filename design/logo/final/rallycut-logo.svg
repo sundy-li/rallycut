@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 160" width="560" height="160" role="img" aria-label="RallyCut logo">
+  <g transform="translate(-1.68 -30.53) scale(0.8842)">
+  <path d="M26 100C44 158 88 158 114 96" fill="none" stroke="#C2EC94" stroke-width="9.5"
+        stroke-linecap="round" stroke-dasharray="10 12"/>
+  <circle cx="126" cy="88" r="18" fill="#F3F7EE"/>
+  <rect x="20" y="162" width="32" height="18" rx="9" fill="#C2EC94" opacity="0.3"/><rect x="62" y="162" width="24" height="18" rx="9" fill="#C2EC94" opacity="0.3"/><rect x="96" y="162" width="46" height="18" rx="9" fill="#F3F7EE" opacity="1"/><rect x="152" y="162" width="20" height="18" rx="9" fill="#C2EC94" opacity="0.3"/><rect x="182" y="162" width="28" height="18" rx="9" fill="#C2EC94" opacity="0.3"/>
+</g>
+  <text x="206" y="104" font-family="Avenir Next" font-size="52" font-weight="700" letter-spacing="-1.5" fill="#F3F7EE">Rally<tspan fill="#C2EC94">Cut</tspan></text>
+  <text x="210" y="134" font-family="Avenir Next" font-size="13.5" font-weight="500" letter-spacing="2" fill="#8FA2AB">让每个好球，留下来</text>
+</svg>

@@ -1,0 +1,33 @@
+{
+  "kind": "explicit synthetic scheduling regression, not model accuracy",
+  "video_seconds": 900,
+  "fps": 5,
+  "blank_until": 700,
+  "table_interval": [
+    700,
+    720
+  ],
+  "frame_source": "real 0044 at 8s, repeated only in the stated synthetic window",
+  "result": {
+    "bounds": [
+      339,
+      217,
+      705,
+      297
+    ],
+    "method": "perspective-rims",
+    "observations": 3,
+    "first_evidence": 711.4000000000001,
+    "last_evidence": 713.4000000000001,
+    "jump_samples": 21,
+    "jump_windows": 7,
+    "jump_budget": 96,
+    "jump_elapsed_seconds": 0.067,
+    "search_extent_seconds": 899.8000000000001,
+    "net_region": [],
+    "search_seconds": 600.0,
+    "sampled_frames": 166,
+    "strategy": "seek_sparse_then_jump",
+    "elapsed_seconds": 0.469
+  }
+}
