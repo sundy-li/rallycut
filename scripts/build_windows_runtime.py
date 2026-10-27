@@ -96,9 +96,19 @@ def main():
     # C++ extension-build headers are not used by our fixed eager FP32 model.
     # Excluding them also avoids very long NSIS paths under Windows profiles.
     shutil.rmtree(STAGE/'python/Lib/site-packages/torch/include',ignore_errors=True)
+    # Windows loads DLL/PYD files, not compiler import/static libraries or PDBs.
+    # dnnl.lib in the full wheel is huge and can exceed 32-bit NSIS mmap limits.
+    # Do not remove Python modules, DLLs, PYDs, license files or model code.
+    removed=0
+    for p in list((STAGE/'python').rglob('*')):
+        if p.is_file() and p.suffix.lower() in {'.lib','.pdb','.exp'}:
+            removed+=p.stat().st_size;p.unlink()
+    print('Removed compiler-only libraries/debug symbols:',removed,'bytes',flush=True)
     for p in list(STAGE.rglob('__pycache__')):shutil.rmtree(p,ignore_errors=True)
     (STAGE/'notices/sources.json').write_text(json.dumps({'python_version':catalog['python_version'],'build_commit':os.environ.get('GITHUB_SHA','local'),'artifacts':target,'model_weights_included':False},indent=2),encoding='utf-8')
     files={p.relative_to(STAGE).as_posix():{'sha256':sha(p),'bytes':p.stat().st_size} for p in sorted(STAGE.rglob('*')) if p.is_file()}
+    for name,meta in sorted(files.items(),key=lambda item:item[1]['bytes'],reverse=True)[:12]:
+        print('Runtime largest file:',meta['bytes'],name,flush=True)
     bundle_id='windows-x64-'+VERSION
     manifest=STAGE/'bundle-manifest.json'
     manifest.write_text(json.dumps({'id':bundle_id,'platform':'windows/amd64','files':files},sort_keys=True),encoding='utf-8')
