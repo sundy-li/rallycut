@@ -6,7 +6,7 @@ on:
       version:
         description: 'Windows test version (without v)'
         required: true
-        default: '0.1.0-alpha.3-windows.1'
+        default: '0.1.0-alpha.3-windows.2'
         type: string
 
 permissions:
@@ -44,13 +44,19 @@ jobs:
         run: go test ./backend/setup ./backend/media
       - name: Test maintained installer contract
         run: python -m unittest discover -s tests/packaging -v
-      - name: Verify real fresh Windows runtime (do not reuse runner tools)
+      - name: Build our relocatable CPU runtime, dependency lock and file hashes
+        shell: pwsh
+        run: |
+          python scripts/build_windows_runtime.py 2>&1 | Tee-Object -FilePath windows-runtime-build.log
+          if ($LASTEXITCODE -ne 0) { throw 'Portable runtime build failed' }
+      - name: Verify relocated environment, model load and real CPU forward
         shell: pwsh
         env:
-          RALLYCUT_SETUP_E2E: '1'
+          RALLYCUT_BUNDLE_E2E: '1'
         run: |
-          go test -v ./backend/setup -run '^TestProvisionerInstallsRuntime$' -count=1 -timeout 18m 2>&1 | Tee-Object -FilePath windows-environment-test.log
-          if ($LASTEXITCODE -ne 0) { throw 'Fresh Windows runtime preparation failed' }
+          $env:RALLYCUT_BUNDLE_PATH = (Resolve-Path 'build/runtime-output/RallyCut-runtime-windows-amd64.zip').Path
+          go test -v ./backend/setup -run '^TestPrebuiltBundleInstallation$' -count=1 -timeout 18m 2>&1 | Tee-Object -FilePath windows-environment-test.log
+          if ($LASTEXITCODE -ne 0) { throw 'Relocated runtime or model forward failed' }
       - name: Install Wails CLI
         run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
       - name: Install NSIS and expose it to Git Bash
@@ -80,6 +86,9 @@ jobs:
           $p = Start-Process -FilePath (Resolve-Path $installer) -ArgumentList '/S' -PassThru -Wait
           if ($p.ExitCode -ne 0 -or !(Test-Path $installed)) { throw 'Silent installer did not install application' }
           if ((Get-FileHash $app).Hash -ne (Get-FileHash $installed).Hash) { throw 'Installer did not install the correct payload' }
+          $runtimeZip = Join-Path (Split-Path $installed) 'runtime-payload.zip'
+          if (!(Test-Path $runtimeZip)) { throw 'Installer omitted the prebuilt environment' }
+          if ((Get-FileHash $runtimeZip).Hash -ne (Get-FileHash 'build/runtime-output/RallyCut-runtime-windows-amd64.zip').Hash) { throw 'Installed environment package differs' }
           $data = Join-Path $env:APPDATA 'RallyCut'
           New-Item -ItemType Directory -Force -Path $data | Out-Null
           $marker = Join-Path $data 'installer-preview-marker.txt'
@@ -96,7 +105,7 @@ jobs:
           $app = Join-Path $root "RallyCut-$env:VERSION-windows-amd64.exe"
           $installer = Join-Path $root "RallyCut-$env:VERSION-windows-amd64-setup.exe"
           if (!(Test-Path $app) -or !(Test-Path $installer)) { throw 'Both portable EXE and NSIS installer are required' }
-          $lines = Get-ChildItem $root -Filter '*.exe' | Sort-Object Name | ForEach-Object {
+          $lines = Get-ChildItem $root -File | Where-Object { $_.Name -notlike 'SHA256SUMS*' } | Sort-Object Name | ForEach-Object {
             $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
             "$hash  $($_.Name)"
           }
@@ -113,6 +122,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-environment-log
-          path: windows-environment-test.log
+          path: |
+            windows-environment-test.log
+            windows-runtime-build.log
           retention-days: 14
           if-no-files-found: ignore

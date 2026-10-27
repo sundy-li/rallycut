@@ -217,6 +217,7 @@ export interface SetupState {
   revision?: number;
   state: "checking" | "required" | "running" | "ready" | "failed";
   platform?: string;
+  runtime_mode?: "bundle" | "legacy";
   checks?: { id: string; label: string; ready: boolean }[];
   indeterminate?: boolean;
   step: string;

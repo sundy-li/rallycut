@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Check,
   CircleAlert,
@@ -22,6 +23,17 @@ export function SetupScreen({
   onStart,
   onRecheck,
 }: Props) {
+  const [copyStatus, setCopyStatus] = useState("");
+  const copyError = async () => {
+    try {
+      await navigator.clipboard.writeText(
+        `${state.platform || ""}\n${state.message}\n${state.error || ""}`,
+      );
+      setCopyStatus("已复制，请先移除个人路径再发送");
+    } catch {
+      setCopyStatus("无法自动复制，请展开详情手动选择文字");
+    }
+  };
   const percent = setupPercent(state);
   const checking = state.state === "checking";
   const running = state.state === "running";
@@ -125,19 +137,32 @@ export function SetupScreen({
           </p>
         )}
         {failed && (
-          <div className="setup-error" role="alert">
-            <CircleAlert size={15} />
-            <span>
-              {state.error || "准备失败，请检查网络或磁盘空间后重试。"}
-            </span>
-          </div>
+          <>
+            <div className="setup-error" role="alert">
+              <CircleAlert size={15} />
+              <span>
+                {state.error?.split("\n")[0] ||
+                  "准备失败，请检查网络或磁盘空间后重试。"}
+              </span>
+            </div>
+            <details className="setup-diagnostics">
+              <summary>展开错误详情（用于定位原因）</summary>
+              <pre>{state.error || "没有收到错误详情，请重新检测。"}</pre>
+            </details>
+            <button className="button ghost" onClick={() => void copyError()}>
+              复制错误详情
+            </button>
+            {copyStatus && <p role="status">{copyStatus}</p>}
+          </>
         )}
         {!checking && !running && (
           <>
             <p className="setup-consent">
-              首次准备需要联网，下载量可能从数百 MB 到数
-              GB，耗时取决于网络和平台。建议预留至少 5 GB 空间。依赖只安装在
-              RallyCut 的专用目录，不替换系统 Python、不修改全局 PATH。
+              {state.runtime_mode === "bundle"
+                ? "完整安装器已携带预制环境，不需要现场安装 Python 包；模型文件仍单独下载。使用下载版时支持断点续传。新环境验证成功才切换，失败保留旧环境。"
+                : "首次准备需联网下载当前平台的运行时和依赖，耗时取决于网络与平台。"}
+              建议预留至少 5 GB 空间。依赖只安装在 RallyCut
+              的专用目录，不替换系统 Python、不修改全局 PATH。
             </p>
             <div className="setup-actions">
               <button

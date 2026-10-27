@@ -22,20 +22,23 @@ import (
 	"time"
 
 	"rallycut/backend/analysis"
+	"rallycut/backend/runtimeenv"
 	"rallycut/models"
 	"rallycut/vision"
 )
 
 // State is the single source of truth for the first-run setup screen.
 type CheckItem struct {
-	ID    string `json:"id"`
-	Label string `json:"label"`
-	Ready bool   `json:"ready"`
+	ID     string `json:"id"`
+	Label  string `json:"label"`
+	Ready  bool   `json:"ready"`
+	Detail string `json:"detail,omitempty"`
 }
 
 type State struct {
 	Revision      uint64      `json:"revision"`
 	Platform      string      `json:"platform"`
+	RuntimeMode   string      `json:"runtime_mode,omitempty"`
 	Checks        []CheckItem `json:"checks,omitempty"`
 	Indeterminate bool        `json:"indeterminate"`
 	State         string      `json:"state"` // checking | required | running | ready | failed
@@ -53,8 +56,10 @@ type Options struct {
 	Worker             string
 	Log                *slog.Logger
 	Emit               func(State)
-	ForceManagedPython bool // Fresh-install integration tests must not reuse host Python.
-	ForceManagedMedia  bool // Also exercise FFmpeg / FFprobe downloads on developer machines.
+	ForceManagedPython bool        // Fresh-install integration tests must not reuse host Python.
+	ForceManagedMedia  bool        // Also exercise FFmpeg / FFprobe downloads on developer machines.
+	Bundle             *BundleSpec // A build-pinned portable runtime, never a server-selected executable.
+	BundlePath         string      // Explicit local/offline bundle path for release verification.
 }
 
 // Provisioner installs and verifies the runtime the worker needs.
@@ -98,6 +103,10 @@ func venvPython(dir string) string {
 func (p *Provisioner) snapshotLocked() State {
 	p.revision++
 	p.state.Revision = p.revision
+	p.state.RuntimeMode = "legacy"
+	if p.bundleSpec() != nil {
+		p.state.RuntimeMode = "bundle"
+	}
 	state := p.state
 	state.Checks = append([]CheckItem(nil), state.Checks...)
 	return state
@@ -119,11 +128,21 @@ func (p *Provisioner) inspectRuntime(ctx context.Context) (string, []CheckItem) 
 		{ID: "packages", Label: "视觉分析依赖"},
 		{ID: "model", Label: "视觉模型"},
 	}
+	if spec := p.bundleSpec(); spec != nil {
+		root := runtimeenv.Active(p.options.DataDir)
+		if root == "" {
+			checks[0].Ready = false
+			checks[0].Detail = "需要准备本版预制环境"
+		} else if err := verifyBundleFiles(ctx, root, *spec); err != nil {
+			checks[0].Ready = false
+			checks[0].Detail = err.Error()
+		}
+	}
 	if checks[0].Ready && ctx.Err() == nil {
-		checks[2].Ready = analysis.CheckPython(python)
+		checks[2].Ready, checks[2].Detail = analysis.PythonDetail(python)
 	}
 	if checks[2].Ready && ctx.Err() == nil {
-		checks[3].Ready, _ = analysis.ModelDetail(python, p.options.Worker)
+		checks[3].Ready, checks[3].Detail = analysis.ModelDetailContext(ctx, python, p.options.Worker, p.options.DataDir)
 	}
 	return python, checks
 }
@@ -229,7 +248,7 @@ func (p *Provisioner) Start(parent context.Context) {
 			p.state.Error = "已取消，可重试"
 		default:
 			p.state.State = "failed"
-			p.state.Message = "运行环境准备失败"
+			p.state.Message = "运行环境准备失败（旧环境与项目保留）"
 			p.state.Error = err.Error()
 			p.options.Log.Error("setup failed", "error", err)
 		}
@@ -243,6 +262,9 @@ func (p *Provisioner) Start(parent context.Context) {
 }
 
 func (p *Provisioner) provision(ctx context.Context) (string, error) {
+	if spec := p.bundleSpec(); spec != nil {
+		return p.provisionBundle(ctx, *spec)
+	}
 	target, err := p.target()
 	if err != nil {
 		return "", err
@@ -276,7 +298,7 @@ func (p *Provisioner) provision(ctx context.Context) (string, error) {
 		var missing []string
 		for _, check := range checks {
 			if !check.Ready {
-				missing = append(missing, check.Label)
+				missing = append(missing, check.Label+": "+check.Detail)
 			}
 		}
 		return "", fmt.Errorf("环境自检未通过：%s，请重试或联系维护者", strings.Join(missing, "、"))
@@ -461,7 +483,7 @@ func (p *Provisioner) ensureWeights(ctx context.Context) error {
 	}
 	p.update(0.84, "model", "下载模型权重…", "连接模型源")
 	var last time.Time
-	err = download(ctx, spec.URL, dest, spec.Bytes, func(written, total int64) {
+	err = downloadResumable(ctx, &http.Client{Timeout: 30 * time.Minute}, spec.URL, dest, spec.Bytes, spec.SHA256, func(written, total int64) {
 		if time.Since(last) < 200*time.Millisecond {
 			return
 		}

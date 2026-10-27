@@ -1,0 +1,61 @@
+# 预制环境包、续传与失败回滚
+
+适用本次 Windows x64 `0.1.0-alpha.3-windows.2` 测试版源码；是否已经发布以 GitHub Release 附件为准。Mac 当前仍使用原来的按平台准备流程，本次没有把 Mac 迁移到预制包。
+
+## 用户流程保持不变
+
+先本地检测 → 缺少环境时等待用户点击 → 准备、自检 → 全部通过才进入工作台。完整 Windows 安装器携带预制环境 ZIP，不在用户电脑运行 pip。免安装版需把同版环境 ZIP 放在 EXE 旁。
+
+环境包不含原始模型权重，权重按现有许可边界从原来源单独下载／复用。完整安装器能离线解压依赖，**不等于没有模型也能离线完成准备**。
+
+## 发布机如何生成
+
+`scripts/build_windows_runtime.py` 仅在 Windows CI 运行：
+
+1. 从固定 URL、大小和 SHA-256 获取 uv、Python 与视频工具。
+2. 构建可迁移的完整 Python 布局，依赖直接进入它自己的 `Lib/site-packages`，不压缩包含绝对路径的 venv。
+3. 固定 CPU PyTorch 2.8.0+cpu、NumPy 2.2.6、OpenCV 4.11.0.86；传递依赖生成带哈希锁文件，按锁安装。此包不带 CUDA、DirectML 或 ONNX 转换产物，不改变现有检测模型、FP32、预处理和回合规则。
+4. 携带来自 Visual Studio redistributable 目录的 x64 app-local CRT DLL，检查 PE 架构；不从不明网站或任意 System32 路径收集 DLL。保留来源、许可及依赖 lock。
+5. 每个文件记录字节数和 SHA-256；对总 ZIP 以及文件清单再分别固定哈希。生成本次构建嵌入的 `backend/setup/runtime-bundle.json`，不向 Git 提交 ZIP、Python 二进制或模型权重。
+6. 在新目录安装，验证实际 import 来自当前 Python 根目录，验证视频工具，加载固定权重并执行一次真实 CPU 模型前向，再构建桌面包。
+
+CI 生成的清单属于该构建输入，需随 artifact 留存；源码仓库中的空清单不代表一个已经可用的在线下载源。
+
+## 环境安装事务
+
+```text
+runtime/
+  active.json                 当前已验证环境的指针
+  active.previous.json        上一个指针的备份
+  versions/<id>-<随机后缀>/    候选环境，解压、校验、自检均在此完成
+  downloads/<哈希>.zip.part    未完成的下载，可续传，不会执行
+models/weights/               独立下载并校验的模型
+```
+
+新环境文件哈希正确、模块导入、FFmpeg／FFprobe、模型加载与真实前向全部通过后，才原子替换 `active.json`。下载、解压、自检失败或取消时，清理当前候选目录，旧指针不变，旧目录和项目不删除。崩溃发生在切换前时只留下未激活目录，不会把半成品设为可用；暂未自动清理所有历史版本。
+
+切换后不再移动 Python 目录，避免切换本身引入新路径问题。旧版本目录保留，磁盘空间预检为新包、解压目录和安全余量保留预算。旧 venv 不会被删除，但新包需要通过自己的校验，不能因为开发机有 Python 就跳过本版准备。
+
+## 下载续传与托管边界
+
+- 下载失败保留 `.part`，重试使用 `Range: bytes=<已下载长度>-`。
+- 206 必须具有正确的起点与总大小；服务端忽略 Range 返回 200 时从头写入，不能错误追加。
+- 网络错误、429、5xx 有有限次数退避重试。大小和哈希错误不执行、不激活；拒绝不正确的 Content-Range。
+- 模型下载也使用同一套续传逻辑。完整、已验证的文件直接复用。
+- 只有发布机把**固定哈希清单和 HTTPS URL 一起嵌入应用**，才使用环境包在线下载。私有 GitHub Release 不能匿名下载，不能在应用里写入 GitHub Token。
+- 当前私有测试版使用安装器内置 ZIP／免安装 EXE 同目录 ZIP；不宣称已经提供无需登录的公共环境 CDN。
+
+## 96% 自检失败的处理
+
+旧截图只证明“视觉模型”检查失败，不足以确认原因。新版不丢弃子进程 stderr、退出状态及超时信息，提供展开／复制详情。窗口上区分“模型文件下载与校验”与“模型加载和运行自检”。
+
+自检隔离 PYTHON* 环境污染，验证 NumPy 数据桥接、固定权重哈希、严格模型加载与有限 CPU 前向；为 ARM 模拟首次加载保留最多三分钟。若系统返回非法指令／DLL 加载状态，给出相应提示，但不自动推断所有失败都是 ARM 或 VC++ 导致。
+
+x64 runner 成功不能证明 Windows ARM 模拟成功。遇到旧问题，请用户在新版展开错误详情，提供 Windows 内部版本号、虚拟机和芯片信息；发送前移除个人路径。
+
+## 测试
+
+- `go test -race ./backend/setup ./backend/analysis ./backend/media`：续传、服务端返回 200、错误 Range、坏哈希、路径校验、自检失败保持旧指针、成功激活与备份。
+- `RALLYCUT_BUNDLE_E2E=1` 且 `RALLYCUT_BUNDLE_PATH=<zip>`，运行 `TestPrebuiltBundleInstallation`：使用 CI 生成的真实运行包、全新数据目录、独立模型下载与真实 CPU 前向，不借用 runner Python。
+- `tests/ui/test_setup.py`：确认按钮、门禁、错误和重试；这是桥接 fixture，不冒充 Windows 原生 GUI 验收。
+- Windows CI 另外验证安装、卸载和用户数据保留；ARM 虚拟机安装、真实素材剪辑仍需人工验收。

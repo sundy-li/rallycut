@@ -133,6 +133,7 @@ func runObserved(ctx context.Context, python, worker string, v project.Video, mo
 	}
 	data, _ := json.Marshal(req)
 	cmd := exec.CommandContext(ctx, python, "-u", worker)
+	cmd.Env = PythonEnv()
 	cmd.Stdin = bytes.NewReader(append(data, '\n'))
 	var stderr cappedBuffer
 	cmd.Stderr = &stderr

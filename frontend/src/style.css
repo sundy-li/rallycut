@@ -2061,6 +2061,24 @@ body:has(.setup-screen) {
 .setup-actions .button {
   min-height: 40px;
 }
+.setup-diagnostics {
+  margin: 14px 0;
+  color: #b9c9b0;
+  font-size: 12px;
+}
+.setup-diagnostics summary {
+  cursor: pointer;
+}
+.setup-diagnostics pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 240px;
+  overflow: auto;
+  background: #101811;
+  padding: 12px;
+  font: 11px/1.7 var(--mono);
+  user-select: text;
+}
 .setup-log {
   margin: 5px 0;
   font: 10px/1.6 var(--mono);

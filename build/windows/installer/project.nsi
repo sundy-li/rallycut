@@ -81,6 +81,9 @@ Section "安装 RallyCut"
   SetOutPath $INSTDIR
   ; Do not call wails.files: it selects no x64 payload on an ARM64 host.
   File "/oname=${PRODUCT_EXECUTABLE}" "${ARG_WAILS_AMD64_BINARY}"
+  !if /FileExists "runtime-payload.zip"
+    File "/oname=runtime-payload.zip" "runtime-payload.zip"
+  !endif
   CreateShortcut "$SMPROGRAMS\RallyCut.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
   CreateShortcut "$DESKTOP\RallyCut.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
   !insertmacro wails.associateFiles
@@ -91,6 +94,7 @@ SectionEnd
 Section "uninstall"
   !insertmacro wails.setShellContext
   Delete "$INSTDIR\${PRODUCT_EXECUTABLE}"
+  Delete "$INSTDIR\runtime-payload.zip"
   Delete "$INSTDIR\uninstall.exe"
   RMDir "$INSTDIR"
   Delete "$SMPROGRAMS\RallyCut.lnk"

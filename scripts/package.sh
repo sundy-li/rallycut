@@ -76,6 +76,10 @@ case "$target" in
     wails build "${args[@]}"
     verify_production build/bin/RallyCut.exe
     cp build/bin/RallyCut.exe "$out/RallyCut-${version}-windows-amd64.exe"
+    if [[ -f build/runtime-output/RallyCut-runtime-windows-amd64.zip ]]; then
+      cp build/runtime-output/RallyCut-runtime-windows-amd64.zip "$out/"
+      cp build/runtime-output/runtime-bundle.json "$out/"
+    fi
     echo "产物：$out/RallyCut-${version}-windows-amd64.exe"
     for installer in build/bin/*installer*.exe; do
       [[ -e "$installer" ]] || continue

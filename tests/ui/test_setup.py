@@ -10,7 +10,7 @@ BRIDGE = r"""
 (() => {
  const listeners=new Set();window.__setupCalls=[];
  let revision=1;
- let setup={state:'checking',revision,step:'check',message:'正在检查运行环境…',detail:'',progress:0,platform:'macOS · Apple Silicon',indeterminate:true};
+ let setup={state:'checking',revision,step:'check',message:'正在检查运行环境…',detail:'',progress:0,platform:'Windows · x64',indeterminate:true};
  window.runtime={EventsOn:(name,cb)=>{const e=[name,cb];listeners.add(e);return()=>listeners.delete(e);}};
  window.__setSetup=(next)=>{setup={...setup,...next,revision:++revision};for(const [n,cb] of listeners)if(n==='setup:progress')cb(structuredClone(setup));};
  window.__emitMenu=(name)=>{for(const [n,cb] of listeners)if(n==='menu:'+name)cb();};
@@ -59,9 +59,12 @@ def main():
         expect(page.get_by_role('progressbar')).to_have_attribute('aria-valuenow','56')
         expect(page.locator('.project-home,.app-shell')).to_have_count(0)
         page.screenshot(path=str(ARTIFACTS/'progress.png'),full_page=True)
-        page.evaluate("window.__setSetup({state:'failed',indeterminate:false,error:'下载失败，请检查网络'});window.__resolveStart()")
+        page.evaluate("window.__setSetup({state:'failed',indeterminate:false,error:'下载失败，请检查网络\\nOSError: 模型加载失败，退出状态 0xc000001d'});window.__resolveStart()")
         expect(page.get_by_role('alert')).to_contain_text('下载失败')
         expect(page.get_by_role('button',name='重试准备环境')).to_be_enabled()
+        page.locator('.setup-diagnostics summary').click()
+        expect(page.locator('.setup-diagnostics pre')).to_contain_text('0xc000001d')
+        expect(page.get_by_role('button',name='复制错误详情')).to_be_visible()
         expect(page.locator('.project-home,.app-shell')).to_have_count(0)
         page.screenshot(path=str(ARTIFACTS/'failure.png'),full_page=True)
         page.get_by_role('button',name='重新检测',exact=True).click()

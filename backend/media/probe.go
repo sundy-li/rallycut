@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"rallycut/backend/project"
+	"rallycut/backend/runtimeenv"
 	"runtime"
 	"strconv"
 	"strings"
@@ -25,6 +26,9 @@ func BinaryFor(dataDir, name string) string {
 		return p
 	}
 	if dataDir != "" && (name == "ffmpeg" || name == "ffprobe") {
+		if active := runtimeenv.Active(dataDir); active != "" {
+			return filepath.Join(active, "bin", name+".exe")
+		}
 		file := name
 		if runtime.GOOS == "windows" {
 			file += ".exe"

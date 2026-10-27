@@ -20,8 +20,8 @@ export const SETUP_STEPS: SetupStep[] = [
   { id: "python", label: "Python 运行时" },
   { id: "media", label: "视频处理工具（FFmpeg / FFprobe）" },
   { id: "packages", label: "视觉依赖（NumPy / OpenCV / PyTorch）" },
-  { id: "model", label: "模型权重" },
-  { id: "verify", label: "环境自检" },
+  { id: "model", label: "模型文件（下载与校验）" },
+  { id: "verify", label: "模型加载与运行自检" },
 ];
 
 export type SetupStepStatus = "done" | "active" | "pending" | "failed";

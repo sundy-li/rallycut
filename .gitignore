@@ -4,6 +4,8 @@ build/release/
 build/skills/
 build/coreml/
 build/*.txt
+build/runtime-output/
+build/runtime-stage/
 build/darwin/
 # Wails generates Windows resources; keep only our maintained NSIS project.
 build/windows/*
