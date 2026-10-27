@@ -6,6 +6,7 @@
 
 ## 下载哪个
 
+- 安装器使用中文、按当前用户安装，并允许 Windows 11 ARM 上的 x64 模拟测试；ARM 上会先提示兼容性限制。卸载保留项目和已下载的环境。
 - **先选安装器**：`RallyCut-0.1.0-alpha.3-windows.1-windows-amd64-setup.exe`。
 - **免安装备用**：`RallyCut-0.1.0-alpha.3-windows.1-windows-amd64.exe`。它同样使用系统 WebView2，不代表不需要运行环境。
 - **校验清单**：`SHA256SUMS-windows.txt`。

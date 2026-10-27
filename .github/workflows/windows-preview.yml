@@ -42,6 +42,8 @@ jobs:
       - uses: extractions/setup-just@v2
       - name: Test environment provisioning logic
         run: go test ./backend/setup ./backend/media
+      - name: Test maintained installer contract
+        run: python -m unittest discover -s tests/packaging -v
       - name: Verify real fresh Windows runtime (do not reuse runner tools)
         shell: pwsh
         env:
@@ -63,6 +65,30 @@ jobs:
       - name: Build x64 application and installer
         shell: bash
         run: just package-windows
+      - name: Smoke-test installer, payload and uninstall data preservation
+        shell: pwsh
+        timeout-minutes: 5
+        run: |
+          $root = 'build/release'
+          $app = Join-Path $root "RallyCut-$env:VERSION-windows-amd64.exe"
+          $installer = Join-Path $root "RallyCut-$env:VERSION-windows-amd64-setup.exe"
+          if (!(Test-Path $app) -or !(Test-Path $installer)) { throw 'Both EXEs must be built' }
+          $bytes = [IO.File]::ReadAllBytes((Resolve-Path $app))
+          $pe = [BitConverter]::ToInt32($bytes, 0x3c)
+          if ([BitConverter]::ToUInt16($bytes, $pe + 4) -ne 0x8664) { throw 'Application is not x64' }
+          $installed = Join-Path $env:LOCALAPPDATA 'Programs\RallyCut\RallyCut.exe'
+          $p = Start-Process -FilePath (Resolve-Path $installer) -ArgumentList '/S' -PassThru -Wait
+          if ($p.ExitCode -ne 0 -or !(Test-Path $installed)) { throw 'Silent installer did not install application' }
+          if ((Get-FileHash $app).Hash -ne (Get-FileHash $installed).Hash) { throw 'Installer did not install the correct payload' }
+          $data = Join-Path $env:APPDATA 'RallyCut'
+          New-Item -ItemType Directory -Force -Path $data | Out-Null
+          $marker = Join-Path $data 'installer-preview-marker.txt'
+          Set-Content -Path $marker -Value 'preserve user data'
+          $uninstaller = Join-Path (Split-Path $installed) 'uninstall.exe'
+          $p = Start-Process -FilePath $uninstaller -ArgumentList '/S' -PassThru -Wait
+          if ($p.ExitCode -ne 0 -or (Test-Path $installed)) { throw 'Uninstaller did not remove application' }
+          if (!(Test-Path $marker)) { throw 'Uninstaller deleted application data' }
+          Remove-Item $marker
       - name: Require installer and record checksums
         shell: pwsh
         run: |

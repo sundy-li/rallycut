@@ -5,6 +5,11 @@ build/skills/
 build/coreml/
 build/*.txt
 build/darwin/
+# Wails generates Windows resources; keep only our maintained NSIS project.
+build/windows/*
+!build/windows/installer/
+build/windows/installer/*
+!build/windows/installer/project.nsi
 frontend/node_modules/
 frontend/dist/*
 !frontend/dist/.gitkeep
