@@ -35,6 +35,33 @@ func waitEvent(t *testing.T, events <-chan State, wanted string) State {
 		}
 	}
 }
+func TestInstalledEnvironmentOnlyRequestsMissingModel(t *testing.T) {
+	events := make(chan State, 16)
+	p := New(Options{DataDir: t.TempDir(), Emit: func(s State) { events <- s }})
+	p.inspect = func(context.Context) (string, []CheckItem) {
+		return "installed-python", []CheckItem{{ID: "python", Ready: true}, {ID: "media", Ready: true}, {ID: "packages", Ready: true}, {ID: "model", Ready: false}, {ID: "verify", Ready: false}}
+	}
+	p.Detect(context.Background())
+	s := waitEvent(t, events, "required")
+	p.Wait()
+	if !strings.Contains(s.Message, "约 6 MB") || !runtimeChecksReady(s.Checks) {
+		t.Fatalf("misreported installed components: %+v", s)
+	}
+}
+func TestInstalledModelFailureIsNotReportedAsMissingDependencies(t *testing.T) {
+	events := make(chan State, 16)
+	p := New(Options{DataDir: t.TempDir(), Emit: func(s State) { events <- s }})
+	p.inspect = func(context.Context) (string, []CheckItem) {
+		return "installed-python", []CheckItem{{ID: "python", Ready: true}, {ID: "media", Ready: true}, {ID: "packages", Ready: true}, {ID: "model", Ready: true}, {ID: "verify", Ready: false, Detail: "illegal instruction"}}
+	}
+	p.Detect(context.Background())
+	s := waitEvent(t, events, "failed")
+	p.Wait()
+	if s.Step != "verify" || s.Network || s.Error != "illegal instruction" {
+		t.Fatalf("lost actual model error: %+v", s)
+	}
+}
+
 func TestDetectRequiresExplicitConsent(t *testing.T) {
 	events := make(chan State, 16)
 	p := New(Options{DataDir: t.TempDir(), Emit: func(s State) { events <- s }})

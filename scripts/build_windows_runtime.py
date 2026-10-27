@@ -18,7 +18,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'build/runtime-output'
 STAGE = ROOT / 'build/runtime-stage'
-VERSION = os.environ.get('VERSION', '0.1.0-alpha.3-windows.2')
+VERSION = os.environ.get('VERSION', '0.1.0-alpha.3-windows.3')
 
 
 def sha(path):
@@ -93,6 +93,9 @@ def main():
         if licenses:shutil.copy2(licenses[0],STAGE/'notices/visual-cpp-license.txt')
         run([python,'-I','-c','import sys,torch,numpy,cv2; print(sys.version,torch.__version__); assert torch.from_numpy(numpy.zeros((1,),dtype=numpy.float32)).numpy().shape==(1,)'])
         for tool in ['ffmpeg','ffprobe']:run([STAGE/'bin'/(tool+'.exe'),'-version'])
+    # C++ extension-build headers are not used by our fixed eager FP32 model.
+    # Excluding them also avoids very long NSIS paths under Windows profiles.
+    shutil.rmtree(STAGE/'python/Lib/site-packages/torch/include',ignore_errors=True)
     for p in list(STAGE.rglob('__pycache__')):shutil.rmtree(p,ignore_errors=True)
     (STAGE/'notices/sources.json').write_text(json.dumps({'python_version':catalog['python_version'],'build_commit':os.environ.get('GITHUB_SHA','local'),'artifacts':target,'model_weights_included':False},indent=2),encoding='utf-8')
     files={p.relative_to(STAGE).as_posix():{'sha256':sha(p),'bytes':p.stat().st_size} for p in sorted(STAGE.rglob('*')) if p.is_file()}
@@ -107,9 +110,11 @@ def main():
     catalog={'platforms':{'windows/amd64':spec}}
     (OUT/'runtime-bundle.json').write_text(json.dumps(catalog,indent=2),encoding='utf-8')
     (ROOT/'backend/setup/runtime-bundle.json').write_text(json.dumps(catalog,indent=2),encoding='utf-8')
-    # The installer includes this ZIP. Portable EXE users keep it alongside the
-    # EXE. Private GitHub credentials are never embedded in desktop binaries.
-    shutil.copy2(archive,ROOT/'build/windows/installer/runtime-payload.zip')
+    # Installers expand the versioned tree during installation, before launch.
+    # The ZIP remains an optional portable/offline artifact, not a second setup
+    # step imposed on users of the complete installer.
+    (ROOT/'backend/runtimeenv/bundled-id.txt').write_text(bundle_id+'\n',encoding='utf-8')
+    (ROOT/'build/windows/installer/runtime-layout.nsh').write_text('!define RALLYCUT_RUNTIME_ID "'+bundle_id+'"\n',encoding='utf-8')
     print(json.dumps(spec,indent=2),flush=True)
 
 

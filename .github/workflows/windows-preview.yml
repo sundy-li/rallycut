@@ -6,7 +6,7 @@ on:
       version:
         description: 'Windows test version (without v)'
         required: true
-        default: '0.1.0-alpha.3-windows.2'
+        default: '0.1.0-alpha.3-windows.3'
         type: string
 
 permissions:
@@ -73,7 +73,7 @@ jobs:
         run: just package-windows
       - name: Smoke-test installer, payload and uninstall data preservation
         shell: pwsh
-        timeout-minutes: 5
+        timeout-minutes: 15
         run: |
           $root = 'build/release'
           $app = Join-Path $root "RallyCut-$env:VERSION-windows-amd64.exe"
@@ -86,9 +86,14 @@ jobs:
           $p = Start-Process -FilePath (Resolve-Path $installer) -ArgumentList '/S' -PassThru -Wait
           if ($p.ExitCode -ne 0 -or !(Test-Path $installed)) { throw 'Silent installer did not install application' }
           if ((Get-FileHash $app).Hash -ne (Get-FileHash $installed).Hash) { throw 'Installer did not install the correct payload' }
-          $runtimeZip = Join-Path (Split-Path $installed) 'runtime-payload.zip'
-          if (!(Test-Path $runtimeZip)) { throw 'Installer omitted the prebuilt environment' }
-          if ((Get-FileHash $runtimeZip).Hash -ne (Get-FileHash 'build/runtime-output/RallyCut-runtime-windows-amd64.zip').Hash) { throw 'Installed environment package differs' }
+          $spec = (Get-Content 'build/runtime-output/runtime-bundle.json' -Raw | ConvertFrom-Json).platforms.'windows/amd64'
+          $runtime = Join-Path (Split-Path $installed) "runtimes\$($spec.id)"
+          if (!(Test-Path (Join-Path $runtime 'python\python.exe'))) { throw 'Installer did not expand Python before first launch' }
+          if ((Get-FileHash (Join-Path $runtime 'bundle-manifest.json')).Hash.ToLowerInvariant() -ne $spec.manifest_sha256) { throw 'Installed environment manifest differs' }
+          if (Test-Path (Join-Path (Split-Path $installed) 'runtime-payload.zip')) { throw 'Installer left a second first-run extraction step' }
+          $env:RALLYCUT_INSTALLED_ROOT = $runtime
+          go test -v ./backend/setup -run '^TestInstalledRuntimeFirstUse$' -count=1 -timeout 12m
+          if ($LASTEXITCODE -ne 0) { throw 'First-use did not recognize the real installed runtime' }
           $data = Join-Path $env:APPDATA 'RallyCut'
           New-Item -ItemType Directory -Force -Path $data | Out-Null
           $marker = Join-Path $data 'installer-preview-marker.txt'

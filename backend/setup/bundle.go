@@ -176,9 +176,60 @@ func bundleLocalPath(s BundleSpec) string {
 	}
 	return ""
 }
+func (p *Provisioner) expandedRoot() string {
+	if p.options.InstalledRoot != "" {
+		return p.options.InstalledRoot
+	}
+	return runtimeenv.Installed()
+}
+func checkReady(checks []CheckItem, id string) bool {
+	for _, c := range checks {
+		if c.ID == id {
+			return c.Ready
+		}
+	}
+	return false
+}
+func runtimeChecksReady(checks []CheckItem) bool {
+	return checkReady(checks, "python") && checkReady(checks, "media") && checkReady(checks, "packages")
+}
+func (p *Provisioner) verifyRuntime(ctx context.Context, root string, s BundleSpec) error {
+	p.update(.10, "python", "检查已安装的运行环境…", "无需下载或重新安装 Python 包")
+	if err := verifyBundleFiles(ctx, root, s); err != nil {
+		return err
+	}
+	python := filepath.Join(root, "python", "python.exe")
+	if ok, detail := analysis.PythonDetail(python); !ok {
+		return fmt.Errorf("已安装依赖自检失败：%s", detail)
+	}
+	for _, tool := range []string{"ffmpeg", "ffprobe"} {
+		if !commandWorks(ctx, filepath.Join(root, "bin", tool+".exe"), "-version") {
+			return fmt.Errorf("已安装视频工具自检失败：%s", tool)
+		}
+	}
+	if err := p.ensureWeights(ctx); err != nil {
+		return err
+	}
+	p.mu.Lock()
+	p.state.Checks = []CheckItem{{ID: "python", Ready: true}, {ID: "media", Ready: true}, {ID: "packages", Ready: true}, {ID: "model", Ready: true}, {ID: "verify", Ready: false}}
+	p.mu.Unlock()
+	p.update(.96, "verify", "执行模型运行自检…", "首次 ARM 模拟加载可能较慢，请等待")
+	p.setIndeterminate(true)
+	defer p.setIndeterminate(false)
+	if ok, detail := analysis.ModelDetailContext(ctx, python, p.options.Worker, p.options.DataDir); !ok {
+		return fmt.Errorf("环境已安装，但模型运行自检未通过\n%s", detail)
+	}
+	return nil
+}
 func (p *Provisioner) provisionBundle(ctx context.Context, s BundleSpec) (string, error) {
 	if err := s.validate(); err != nil {
 		return "", err
+	}
+	if root := p.expandedRoot(); root != "" {
+		if err := p.verifyRuntime(ctx, root, s); err != nil {
+			return "", err
+		}
+		return filepath.Join(root, "python", "python.exe"), nil
 	}
 	if err := os.MkdirAll(p.runtimeDir(), 0700); err != nil {
 		return "", err

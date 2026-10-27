@@ -78,6 +78,15 @@ def main():
         expect(page.locator('.setup-screen')).to_have_count(0)
         assert page.evaluate("window.__setupCalls.filter(x=>x==='start').length")==2
         assert 'open' not in page.evaluate('window.__setupCalls')
+        page.evaluate("window.__setSetup({state:'required',runtime_mode:'installed',step:'check',progress:0,error:'',message:'运行环境已随软件安装，仅需首次下载模型（约 6 MB）',detail:'',checks:[{id:'python',label:'Python',ready:true},{id:'media',label:'video',ready:true},{id:'packages',label:'packages',ready:true},{id:'model',label:'model',ready:false},{id:'verify',label:'verify',ready:false}]})")
+        expect(page.get_by_role('heading',name='仅需首次启用分析功能')).to_be_visible()
+        expect(page.get_by_role('button',name='下载模型并开始使用（约 6 MB）')).to_be_visible()
+        expect(page.get_by_role('button',name='开始准备环境',exact=True)).to_have_count(0)
+        expect(page.locator('.setup-steps li')).to_have_count(3)
+        expect(page.locator('.setup-steps li').first).to_contain_text('软件内置运行环境')
+        expect(page.locator('.setup-steps li').first).to_have_class('done')
+        page.screenshot(path=str(ARTIFACTS/'installed-only-model.png'),full_page=True)
+        expect(page.locator('.project-home,.app-shell')).to_have_count(0)
         assert not errors,errors
         browser.close()
     print('PASS: consent required, unavailable workspace/shortcuts, real phase progress, failure/recheck/retry, and stale RPC cannot override ready')

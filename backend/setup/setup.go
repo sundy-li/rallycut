@@ -60,6 +60,7 @@ type Options struct {
 	ForceManagedMedia  bool        // Also exercise FFmpeg / FFprobe downloads on developer machines.
 	Bundle             *BundleSpec // A build-pinned portable runtime, never a server-selected executable.
 	BundlePath         string      // Explicit local/offline bundle path for release verification.
+	InstalledRoot      string      // An expanded installer payload, also injectable by tests.
 }
 
 // Provisioner installs and verifies the runtime the worker needs.
@@ -106,6 +107,9 @@ func (p *Provisioner) snapshotLocked() State {
 	p.state.RuntimeMode = "legacy"
 	if p.bundleSpec() != nil {
 		p.state.RuntimeMode = "bundle"
+		if p.expandedRoot() != "" {
+			p.state.RuntimeMode = "installed"
+		}
 	}
 	state := p.state
 	state.Checks = append([]CheckItem(nil), state.Checks...)
@@ -122,14 +126,26 @@ func (p *Provisioner) Status() State {
 
 func (p *Provisioner) inspectRuntime(ctx context.Context) (string, []CheckItem) {
 	python := analysis.Python(p.options.DataDir)
+	root := p.expandedRoot()
+	if root != "" {
+		python = filepath.Join(root, "python", "python.exe")
+	}
+	mediaBinary := func(name string) string {
+		if root != "" {
+			return filepath.Join(root, "bin", name+".exe")
+		}
+		return p.mediaBinary(name)
+	}
 	checks := []CheckItem{
 		{ID: "python", Label: "Python 运行时", Ready: supportsVenv(python)},
-		{ID: "media", Label: "视频处理工具 FFmpeg / FFprobe", Ready: commandWorks(ctx, p.mediaBinary("ffmpeg"), "-version") && commandWorks(ctx, p.mediaBinary("ffprobe"), "-version")},
+		{ID: "media", Label: "视频处理工具 FFmpeg / FFprobe", Ready: commandWorks(ctx, mediaBinary("ffmpeg"), "-version") && commandWorks(ctx, mediaBinary("ffprobe"), "-version")},
 		{ID: "packages", Label: "视觉分析依赖"},
 		{ID: "model", Label: "视觉模型"},
 	}
 	if spec := p.bundleSpec(); spec != nil {
-		root := runtimeenv.Active(p.options.DataDir)
+		if root == "" {
+			root = runtimeenv.Active(p.options.DataDir)
+		}
 		if root == "" {
 			checks[0].Ready = false
 			checks[0].Detail = "需要准备本版预制环境"
@@ -141,9 +157,30 @@ func (p *Provisioner) inspectRuntime(ctx context.Context) (string, []CheckItem) 
 	if checks[0].Ready && ctx.Err() == nil {
 		checks[2].Ready, checks[2].Detail = analysis.PythonDetail(python)
 	}
-	if checks[2].Ready && ctx.Err() == nil {
-		checks[3].Ready, checks[3].Detail = analysis.ModelDetailContext(ctx, python, p.options.Worker, p.options.DataDir)
+	weights, weightErr := defaultWeights()
+	if weightErr == nil {
+		if got, err := fileSHA256(p.weightsPath()); err == nil && strings.EqualFold(got, weights.SHA256) {
+			checks[3].Ready = true
+		} else {
+			checks[3].Detail = "仅缺少模型文件，约 6 MB；下载并校验后继续"
+		}
+	} else {
+		checks[3].Detail = weightErr.Error()
 	}
+	verify := CheckItem{ID: "verify", Label: "模型加载与运行自检"}
+	if checks[0].Ready && checks[1].Ready && checks[2].Ready && checks[3].Ready && ctx.Err() == nil {
+		verify.Ready, verify.Detail = analysis.ModelDetailContext(ctx, python, p.options.Worker, p.options.DataDir)
+	}
+	// Preserve explicit developer/repository model discovery for non-bundled
+	// checkouts; installed releases use their own model files and strict pin.
+	if p.bundleSpec() == nil && runtimeChecksReady(checks) && !checks[3].Ready && ctx.Err() == nil {
+		verify.Ready, verify.Detail = analysis.ModelDetailContext(ctx, python, p.options.Worker, p.options.DataDir)
+		if verify.Ready {
+			checks[3].Ready = true
+			checks[3].Detail = ""
+		}
+	}
+	checks = append(checks, verify)
 	return python, checks
 }
 func allReady(checks []CheckItem) bool {
@@ -178,6 +215,20 @@ func (p *Provisioner) Detect(ctx context.Context) {
 		p.mu.Lock()
 		p.running = false
 		p.state = State{State: "required", Step: "check", Message: "首次使用需要准备运行环境", Platform: platformName(), Checks: checks, Network: true}
+		if runtimeChecksReady(checks) && !checkReady(checks, "model") {
+			p.state.Message = "运行环境已随软件安装，仅需首次下载模型（约 6 MB）"
+		}
+		if runtimeChecksReady(checks) && checkReady(checks, "model") && !checkReady(checks, "verify") {
+			p.state.State = "failed"
+			p.state.Step = "verify"
+			p.state.Message = "环境已安装，模型运行自检未通过"
+			for _, check := range checks {
+				if check.ID == "verify" {
+					p.state.Error = check.Detail
+				}
+			}
+			p.state.Network = false
+		}
 		if allReady(checks) && ctx.Err() == nil {
 			p.state = State{State: "ready", Step: "ready", Message: "运行环境已就绪", Platform: platformName(), Checks: checks, Python: python, Progress: 1}
 		}

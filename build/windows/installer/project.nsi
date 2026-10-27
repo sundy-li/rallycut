@@ -16,6 +16,9 @@ Unicode true
 !endif
 !define WAILS_INSTALL_WEBVIEW_DETAILPRINT "正在准备 Microsoft WebView2 窗口运行环境…"
 !include "wails_tools.nsh"
+; Generated and pinned by the release builder. Missing payload is a build error.
+!include "runtime-layout.nsh"
+SetCompressor /SOLID lzma
 
 !ifndef ARG_WAILS_AMD64_BINARY
   !error "This installer requires the x64 application payload"
@@ -36,8 +39,8 @@ ManifestDPIAware true
 !define MUI_FINISHPAGE_NOAUTOCLOSE
 !define MUI_ABORTWARNING
 !define MUI_WELCOMEPAGE_TITLE "安装 RallyCut 测试版"
-!define MUI_WELCOMEPAGE_TEXT "此包为 Windows x64 版，也可在 Windows 11 ARM 中测试 x64 模拟运行，不是原生 ARM64 版。$\r$\n$\r$\n首次打开后，先检测环境；点击准备按钮后才下载 Python、视频工具、分析依赖与模型。建议预留至少 5 GB 空间，并保持网络可用。"
-!define MUI_FINISHPAGE_TEXT "安装完成。请从桌面或开始菜单打开 RallyCut，完成首次环境准备。$\r$\n$\r$\nWindows ARM 上的运行速度和推理库兼容性仍需实测，不代表普通 x64 电脑的性能。"
+!define MUI_WELCOMEPAGE_TEXT "此包为 Windows x64 版，也可在 Windows 11 ARM 中测试 x64 模拟运行，不是原生 ARM64 版。$\r$\n$\r$\n安装器会直接安装软件自带的运行环境，不需要首次打开再解压或安装 Python。首次缺少模型时，仅需下载约 6 MB；已有模型可复用。建议预留至少 5 GB 空间。"
+!define MUI_FINISHPAGE_TEXT "安装完成，内置运行环境已安装。请从桌面或开始菜单打开 RallyCut；首次只需补齐模型并通过自检。$\r$\n$\r$\nWindows ARM 上的运行速度和推理库兼容性仍需实测，不代表普通 x64 电脑的性能。"
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
@@ -78,12 +81,16 @@ FunctionEnd
 Section "安装 RallyCut"
   !insertmacro wails.setShellContext
   !insertmacro wails.webview2runtime
+  ; Expand the complete versioned runtime during installation, not first run.
+  ; Copy the executable last; the previous executable/version remains usable
+  ; until the new files have been written. Never overwrite user projects.
+  SetOutPath "$INSTDIR\runtimes\${RALLYCUT_RUNTIME_ID}"
+  File /r /x bundle-manifest.json "..\..\runtime-stage\*.*"
+  SetOutPath "$INSTDIR\runtimes\${RALLYCUT_RUNTIME_ID}"
+  File "..\..\runtime-stage\bundle-manifest.json"
   SetOutPath $INSTDIR
   ; Do not call wails.files: it selects no x64 payload on an ARM64 host.
   File "/oname=${PRODUCT_EXECUTABLE}" "${ARG_WAILS_AMD64_BINARY}"
-  !if /FileExists "runtime-payload.zip"
-    File "/oname=runtime-payload.zip" "runtime-payload.zip"
-  !endif
   CreateShortcut "$SMPROGRAMS\RallyCut.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
   CreateShortcut "$DESKTOP\RallyCut.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
   !insertmacro wails.associateFiles
@@ -95,6 +102,10 @@ Section "uninstall"
   !insertmacro wails.setShellContext
   Delete "$INSTDIR\${PRODUCT_EXECUTABLE}"
   Delete "$INSTDIR\runtime-payload.zip"
+  ; Only the compiled, versioned installation payload is removed. AppData is
+  ; never recursively deleted. Other installed runtime versions are retained.
+  RMDir /r "$INSTDIR\runtimes\${RALLYCUT_RUNTIME_ID}"
+  RMDir "$INSTDIR\runtimes"
   Delete "$INSTDIR\uninstall.exe"
   RMDir "$INSTDIR"
   Delete "$SMPROGRAMS\RallyCut.lnk"

@@ -13,6 +13,24 @@ const state = (overrides: Partial<SetupState> = {}): SetupState => ({
 });
 
 describe("setupSteps", () => {
+  it("summarizes installed components and requests only the missing model", () => {
+    const steps = setupSteps(
+      state({
+        state: "required",
+        runtime_mode: "installed",
+        checks: [
+          { id: "python", label: "Python", ready: true },
+          { id: "media", label: "media", ready: true },
+          { id: "packages", label: "packages", ready: true },
+          { id: "model", label: "model", ready: false },
+          { id: "verify", label: "verify", ready: false },
+        ],
+      }),
+    );
+    expect(steps.map((s) => s.id)).toEqual(["installed", "model", "verify"]);
+    expect(steps.map((s) => s.status)).toEqual(["done", "pending", "pending"]);
+    expect(steps.some((s) => s.label.includes("Python"))).toBe(false);
+  });
   it("marks finished, current and pending steps", () => {
     const steps = setupSteps(state({ step: "model", progress: 0.84 }));
     expect(steps.map((step) => step.status)).toEqual([

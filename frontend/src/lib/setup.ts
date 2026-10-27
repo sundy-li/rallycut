@@ -29,6 +29,42 @@ export type SetupStepStatus = "done" | "active" | "pending" | "failed";
 export function setupSteps(
   state: SetupState,
 ): (SetupStep & { status: SetupStepStatus })[] {
+  if (state.runtime_mode === "installed") {
+    const ready = (id: string) =>
+      state.checks?.some((check) => check.id === id && check.ready) ||
+      state.state === "ready";
+    const runtimeReady = ["python", "media", "packages"].every(ready);
+    const status = (id: string, done: boolean): SetupStepStatus => {
+      if (done) return "done";
+      if (state.state === "failed" && (id === "installed" || state.step === id))
+        return "failed";
+      if (
+        state.state === "running" &&
+        (id === state.step ||
+          (id === "installed" &&
+            ["python", "media", "packages"].includes(state.step)))
+      )
+        return "active";
+      return "pending";
+    };
+    return [
+      {
+        id: "installed",
+        label: "软件内置运行环境",
+        status: status("installed", runtimeReady),
+      },
+      {
+        id: "model",
+        label: "首次模型文件（约 6 MB）",
+        status: status("model", ready("model")),
+      },
+      {
+        id: "verify",
+        label: "模型运行自检",
+        status: status("verify", ready("verify")),
+      },
+    ];
+  }
   if (state.state === "ready") {
     return SETUP_STEPS.map((step) => ({ ...step, status: "done" }));
   }

@@ -21,8 +21,17 @@ class WindowsInstallerTests(unittest.TestCase):
         self.assertIn('!insertmacro MUI_LANGUAGE "SimpChinese"', self.source)
         self.assertIn('!define WAILS_INSTALL_SCOPE "user"', self.source)
         self.assertIn('不是原生 ARM64 版', self.source)
-        self.assertNotIn('RMDir /r', self.source)
+        self.assertNotIn('RMDir /r "$APPDATA', self.source)
+        self.assertNotIn('RMDir /r "$LOCALAPPDATA', self.source)
+        self.assertIn('RMDir /r "$INSTDIR\\runtimes\\${RALLYCUT_RUNTIME_ID}"', self.source)
         self.assertIn('!insertmacro wails.webview2runtime', self.source)
+
+    def test_expanded_runtime_is_installed_before_executable(self):
+        self.assertIn('SetCompressor /SOLID lzma', self.source)
+        self.assertIn('runtime-layout.nsh', self.source)
+        self.assertIn('File /r /x bundle-manifest.json', self.source)
+        self.assertLess(self.source.index('File /r /x bundle-manifest.json'), self.source.index('File "/oname=${PRODUCT_EXECUTABLE}"'))
+        self.assertNotIn('File "/oname=runtime-payload.zip"', self.source)
 
     def test_generated_tools_are_not_committed(self):
         ignore = (ROOT / '.gitignore').read_text()

@@ -26,7 +26,7 @@ func BinaryFor(dataDir, name string) string {
 		return p
 	}
 	if dataDir != "" && (name == "ffmpeg" || name == "ffprobe") {
-		if active := runtimeenv.Active(dataDir); active != "" {
+		if active := runtimeenv.Root(dataDir); active != "" {
 			return filepath.Join(active, "bin", name+".exe")
 		}
 		file := name
