@@ -6,7 +6,7 @@ on:
       version:
         description: 'Windows test version (without v)'
         required: true
-        default: '0.1.0-alpha.3-windows.3'
+        default: '0.1.0-alpha.3-windows.4'
         type: string
 
 permissions:
@@ -41,7 +41,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - uses: extractions/setup-just@v2
       - name: Test environment provisioning logic
-        run: go test ./backend/setup ./backend/media
+        run: go test ./backend/setup ./backend/media ./backend/childproc ./backend/runtimeenv
       - name: Test maintained installer contract
         run: python -m unittest discover -s tests/packaging -v
       - name: Build our relocatable CPU runtime, dependency lock and file hashes

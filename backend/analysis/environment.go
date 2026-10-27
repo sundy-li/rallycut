@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"rallycut/backend/childproc"
 	"rallycut/backend/media"
 	"rallycut/backend/runtimeenv"
 	"strings"
@@ -78,7 +79,7 @@ with torch.inference_mode():
  out=d.model(torch.zeros((1,9,288,512),dtype=torch.float32))[0]
  assert torch.isfinite(out).all(),'non-finite model output'
 print('model forward OK',tuple(out.shape))`
-	cmd := exec.CommandContext(ctx, python, "-I", "-c", code, filepath.Dir(worker))
+	cmd := childproc.CommandContext(ctx, python, "-I", "-c", code, filepath.Dir(worker))
 	cmd.Env = append(PythonEnv(), "RALLYCUT_DATA_DIR="+dataDir)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -96,7 +97,7 @@ for m in (cv2,numpy):
  p=pathlib.Path(m.__file__).resolve()
  assert p.is_relative_to(root),'dependency outside runtime: '+str(p)
 print('dependencies OK')`
-	cmd := exec.CommandContext(ctx, python, "-I", "-c", code)
+	cmd := childproc.CommandContext(ctx, python, "-I", "-c", code)
 	cmd.Env = PythonEnv()
 	out, err := cmd.CombinedOutput()
 	if err != nil {

@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"rallycut/backend/analysis"
+	"rallycut/backend/childproc"
 	"rallycut/backend/runtimeenv"
 	"rallycut/models"
 	"rallycut/vision"
@@ -41,7 +42,7 @@ type State struct {
 	RuntimeMode   string      `json:"runtime_mode,omitempty"`
 	Checks        []CheckItem `json:"checks,omitempty"`
 	Indeterminate bool        `json:"indeterminate"`
-	State         string      `json:"state"` // checking | required | running | ready | failed
+	State         string      `json:"state"` // opening | checking | required | running | ready | failed
 	Step          string      `json:"step"`  // check | python | media | packages | model | verify | ready
 	Message       string      `json:"message"`
 	Detail        string      `json:"detail"`
@@ -74,6 +75,7 @@ type Provisioner struct {
 	wg       sync.WaitGroup
 	run      func(context.Context) (string, error)
 	inspect  func(context.Context) (string, []CheckItem)
+	snapshot func(string) (readyReceipt, error)
 }
 
 func New(options Options) *Provisioner {
@@ -82,9 +84,9 @@ func New(options Options) *Provisioner {
 	}
 	p := &Provisioner{
 		options: options,
-		state:   State{State: "checking", Step: "check", Message: "正在检查运行环境…", Indeterminate: true, Platform: platformName()},
+		state:   State{State: "opening", Step: "check", Message: "正在打开…", Indeterminate: true, Platform: platformName()},
 	}
-	p.run, p.inspect = p.provision, p.inspectRuntime
+	p.run, p.inspect, p.snapshot = p.provision, p.inspectRuntime, p.readinessSnapshot
 	return p
 }
 
@@ -204,6 +206,7 @@ func (p *Provisioner) Detect(ctx context.Context) {
 		return
 	}
 	p.running = true
+	p.invalidateReceipt()
 	p.state = State{State: "checking", Step: "check", Message: "正在检查运行环境…", Platform: platformName(), Indeterminate: true}
 	state := p.snapshotLocked()
 	p.wg.Add(1)
@@ -212,6 +215,9 @@ func (p *Provisioner) Detect(ctx context.Context) {
 	go func() {
 		defer p.wg.Done()
 		python, checks := p.inspect(ctx)
+		if allReady(checks) && ctx.Err() == nil {
+			p.saveReadiness(python)
+		}
 		p.mu.Lock()
 		p.running = false
 		p.state = State{State: "required", Step: "check", Message: "首次使用需要准备运行环境", Platform: platformName(), Checks: checks, Network: true}
@@ -277,6 +283,7 @@ func (p *Provisioner) Start(parent context.Context) {
 		return
 	}
 	p.running = true
+	p.invalidateReceipt()
 	p.state = State{State: "running", Step: "python", Platform: platformName(), Checks: p.state.Checks, Progress: 0.02, Message: "准备 Python 运行时…", Network: true}
 	state := p.snapshotLocked()
 	p.wg.Add(1)
@@ -288,6 +295,9 @@ func (p *Provisioner) Start(parent context.Context) {
 		ctx, cancel := context.WithTimeout(parent, time.Hour)
 		defer cancel()
 		python, err := p.run(ctx)
+		if err == nil && ctx.Err() == nil {
+			p.saveReadiness(python)
+		}
 		p.mu.Lock()
 		p.running = false
 		switch {
@@ -368,7 +378,7 @@ func (p *Provisioner) ensureVenv(ctx context.Context, base string) error {
 	if err := os.MkdirAll(p.runtimeDir(), 0700); err != nil {
 		return err
 	}
-	out, err := exec.CommandContext(ctx, base, "-m", "venv", p.venvDir()).CombinedOutput()
+	out, err := childproc.CommandContext(ctx, base, "-m", "venv", p.venvDir()).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("创建虚拟环境失败：%s", tail(string(out), 400))
 	}
@@ -421,7 +431,7 @@ func (p *Provisioner) pip(ctx context.Context, python string, from, to float64, 
 	p.setIndeterminate(true)
 	defer p.setIndeterminate(false)
 	args := []string{"-m", "pip", "install", "--disable-pip-version-check", "--no-input", "--progress-bar", "off", "-r", requirements}
-	cmd := exec.CommandContext(ctx, python, args...)
+	cmd := childproc.CommandContext(ctx, python, args...)
 	cmd.Env = append(os.Environ(), "PIP_DISABLE_PIP_VERSION_CHECK=1", "PIP_CACHE_DIR="+filepath.Join(p.runtimeDir(), "cache", "pip"), "PYTHONNOUSERSITE=1")
 
 	var last time.Time
@@ -669,7 +679,7 @@ func (p *Provisioner) update(progress float64, step, message, detail string) {
 func FindPython() (string, error) {
 	var candidates []string
 	if runtime.GOOS == "windows" {
-		if out, err := exec.Command("py", "-3.12", "-c", "import sys;print(sys.executable)").Output(); err == nil {
+		if out, err := childproc.Command("py", "-3.12", "-c", "import sys;print(sys.executable)").Output(); err == nil {
 			if path := strings.TrimSpace(string(out)); path != "" && supportsVenv(path) {
 				return path, nil
 			}
@@ -705,7 +715,7 @@ func supportsVenv(path string) bool {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	out, err := exec.CommandContext(ctx, path, "-c", "import sys,venv;print('%d.%d' % sys.version_info[:2])").Output()
+	out, err := childproc.CommandContext(ctx, path, "-c", "import sys,venv;print('%d.%d' % sys.version_info[:2])").Output()
 	if err != nil {
 		return false
 	}

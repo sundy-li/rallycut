@@ -1925,6 +1925,27 @@ kbd {
 body:has(.setup-screen) {
   min-width: 0;
 }
+.app-opening {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: #101713;
+  color: #bedc9b;
+}
+.app-opening > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.app-opening strong {
+  font-size: 28px;
+  letter-spacing: -0.8px;
+}
+.app-opening span {
+  font-size: 12px;
+  color: #8c9c89;
+}
 .setup-screen {
   min-height: 100dvh;
   display: flex;

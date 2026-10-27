@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"rallycut/backend/childproc"
 	"rallycut/backend/project"
 	"rallycut/backend/runtimeenv"
 	"runtime"
@@ -92,7 +93,7 @@ func Probe(ctx context.Context, path string) (project.Video, error) {
 	}
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	out, err := exec.CommandContext(ctx, Binary("ffprobe"), "-v", "error", "-show_streams", "-show_format", "-of", "json", abs).Output()
+	out, err := childproc.CommandContext(ctx, Binary("ffprobe"), "-v", "error", "-show_streams", "-show_format", "-of", "json", abs).Output()
 	if err != nil {
 		return v, fmt.Errorf("ffprobe 读取失败（请检查 FFmpeg 安装或文件格式）: %w", err)
 	}

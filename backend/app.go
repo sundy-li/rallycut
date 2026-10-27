@@ -129,8 +129,9 @@ func (a *App) Startup(ctx context.Context) {
 		}
 	}
 	a.log.Info("application started", "data_dir", a.dataDir, "worker_digest", vision.Digest(), "python", a.python)
-	// Detection is local-only and asynchronous. Never install before consent.
-	a.setup.Detect(a.ctx)
+	// A successful, unchanged runtime takes the local-only fast path before the
+	// frontend can see a setup screen. Never launch helpers or install on a hit.
+	a.setup.Boot(a.ctx)
 }
 
 func (a *App) Shutdown(context.Context) {

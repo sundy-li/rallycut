@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { Cpu, Gauge, Scissors, Settings, X } from "lucide-react";
+import { Cpu, Gauge, Scissors, Settings, ShieldCheck, X } from "lucide-react";
 import type { ExportSettings, Rules } from "../api/types";
 import EncodingOptions from "./EncodingOptions";
 import { SKIP_STEPS } from "../playback";
 import { shortcutKeys } from "../lib/shortcuts";
 
-export type SettingsTab = "buffer" | "export" | "playback";
+export type SettingsTab = "buffer" | "export" | "playback" | "environment";
 
 interface Props {
   /** Project settings are only editable with a project open. */
@@ -19,12 +19,14 @@ interface Props {
   skipStep: number;
   onSkipStep: (step: number) => void;
   onClose: () => void;
+  onRecheckEnvironment?: () => void;
 }
 
 const TABS: { id: SettingsTab; label: string; icon: typeof Cpu }[] = [
   { id: "buffer", label: "片段缓冲", icon: Scissors },
   { id: "export", label: "导出编码", icon: Cpu },
   { id: "playback", label: "播放", icon: Gauge },
+  { id: "environment", label: "运行环境", icon: ShieldCheck },
 ];
 
 /** ⌘, settings page: project clip / export settings plus playback prefs. */
@@ -83,6 +85,24 @@ export default function SettingsDialog(props: Props) {
             {tab === "buffer" && <BufferPane {...props} />}
             {tab === "export" && <ExportPane {...props} />}
             {tab === "playback" && <PlaybackPane {...props} />}
+            {tab === "environment" && (
+              <>
+                <h3>运行环境</h3>
+                <p className="settings-scope">
+                  首次完整验证成功后，同版本正常重开会直接进入软件，不重复启动依赖检查或模型前向。
+                </p>
+                <p className="muted small">
+                  仅在分析、导出或依赖异常时手动复检。复检会重新校验环境、加载模型，可能需要等待；检查失败不会伪装成可用，也不会自动下载。
+                </p>
+                <button
+                  className="button ghost"
+                  disabled={props.disabled || !props.onRecheckEnvironment}
+                  onClick={props.onRecheckEnvironment}
+                >
+                  完整重新检查运行环境
+                </button>
+              </>
+            )}
           </div>
         </div>
       </section>

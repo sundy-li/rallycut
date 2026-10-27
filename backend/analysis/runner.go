@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
+	"rallycut/backend/childproc"
 	"rallycut/backend/media"
 	"rallycut/backend/project"
 	"rallycut/vision"
@@ -120,7 +120,7 @@ func runObserved(ctx context.Context, python, worker string, v project.Video, mo
 		path := f.Name()
 		_ = f.Close()
 		defer os.Remove(path)
-		audio := exec.CommandContext(ctx, media.Binary("ffmpeg"), "-hide_banner", "-loglevel", "error", "-nostdin", "-y", "-i", v.Path, "-map", "0:a:0", "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", path)
+		audio := childproc.CommandContext(ctx, media.Binary("ffmpeg"), "-hide_banner", "-loglevel", "error", "-nostdin", "-y", "-i", v.Path, "-map", "0:a:0", "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", path)
 		var log cappedBuffer
 		audio.Stderr = &log
 		if err := audio.Run(); err != nil {
@@ -132,7 +132,7 @@ func runObserved(ctx context.Context, python, worker string, v project.Video, mo
 		req.AudioPath = path
 	}
 	data, _ := json.Marshal(req)
-	cmd := exec.CommandContext(ctx, python, "-u", worker)
+	cmd := childproc.CommandContext(ctx, python, "-u", worker)
 	cmd.Env = PythonEnv()
 	cmd.Stdin = bytes.NewReader(append(data, '\n'))
 	var stderr cappedBuffer

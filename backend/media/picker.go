@@ -2,8 +2,8 @@ package media
 
 import (
 	"context"
-	"os/exec"
 	"path/filepath"
+	"rallycut/backend/childproc"
 	"runtime"
 	"strings"
 )
@@ -21,16 +21,16 @@ repeat with f in theFiles
 	set out to out & POSIX path of f & linefeed
 end repeat
 return out`
-		out, err = exec.CommandContext(ctx, "osascript", "-e", script).Output()
+		out, err = childproc.CommandContext(ctx, "osascript", "-e", script).Output()
 	case "windows":
 		script := `Add-Type -AssemblyName System.Windows.Forms
 $d=New-Object System.Windows.Forms.OpenFileDialog
 $d.Multiselect=$true
 $d.Filter='Video|*.mp4;*.mov;*.mkv;*.m4v;*.avi;*.webm'
 if($d.ShowDialog() -eq 'OK'){$d.FileNames -join "` + "`n" + `"}`
-		out, err = exec.CommandContext(ctx, "powershell", "-NoProfile", "-STA", "-Command", script).Output()
+		out, err = childproc.DialogContext(ctx, "powershell", "-NoProfile", "-STA", "-Command", script).Output()
 	default:
-		out, err = exec.CommandContext(ctx, "zenity", "--file-selection", "--multiple", "--separator=\n",
+		out, err = childproc.CommandContext(ctx, "zenity", "--file-selection", "--multiple", "--separator=\n",
 			"--file-filter=视频 | *.mp4 *.mov *.mkv *.m4v *.avi *.webm").Output()
 	}
 	if err != nil {

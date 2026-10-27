@@ -215,7 +215,7 @@ export interface Project {
 }
 export interface SetupState {
   revision?: number;
-  state: "checking" | "required" | "running" | "ready" | "failed";
+  state: "opening" | "checking" | "required" | "running" | "ready" | "failed";
   platform?: string;
   runtime_mode?: "bundle" | "installed" | "legacy";
   checks?: { id: string; label: string; ready: boolean }[];

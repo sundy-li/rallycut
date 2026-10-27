@@ -7,8 +7,8 @@ import (
 	"io"
 	"math"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"rallycut/backend/childproc"
 	"rallycut/backend/media"
 	"rallycut/backend/project"
 	"rallycut/backend/timeline"
@@ -279,7 +279,7 @@ func run(ctx context.Context, args ...string) error {
 // reading early once -t is reached; that broken pipe is not an error when
 // FFmpeg itself succeeds.
 func runWithInput(ctx context.Context, feed func(io.Writer) error, args ...string) error {
-	cmd := exec.CommandContext(ctx, media.Binary("ffmpeg"), args...)
+	cmd := childproc.CommandContext(ctx, media.Binary("ffmpeg"), args...)
 	// FFmpeg errors are normally short at loglevel=error; spool to a file to bound RAM.
 	log, err := os.CreateTemp("", "rallycut-ffmpeg-*.log")
 	if err != nil {

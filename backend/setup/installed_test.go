@@ -67,16 +67,40 @@ func TestInstalledRuntimeFirstUse(t *testing.T) {
 	if _, err := os.Stat(p.runtimeDir()); !os.IsNotExist(err) {
 		t.Fatal("local detection wrote a second environment")
 	}
-	python, err := p.provision(ctx)
-	if err != nil {
-		t.Fatal(err)
+	p.Start(ctx)
+	var prepared State
+	for prepared.State != "ready" {
+		select {
+		case state := <-events:
+			prepared = state
+			if state.State == "failed" {
+				t.Fatal(state.Error)
+			}
+		case <-ctx.Done():
+			t.Fatal(ctx.Err())
+		}
 	}
+	p.Wait()
+	python := prepared.Python
 	if python != filepath.Join(root, "python", "python.exe") {
 		t.Fatal("recreated environment rather than using installed Python")
 	}
-	if _, checks := p.inspectRuntime(ctx); !allReady(checks) {
-		t.Fatalf("installed model self-test failed: %+v", checks)
+	// Real restart: a new provisioner reads the on-disk success receipt. A
+	// cache hit must not emit checking or execute even one external probe.
+	var restartEvents []State
+	restarted := New(Options{DataDir: dir, Worker: worker, InstalledRoot: root, Emit: func(s State) { restartEvents = append(restartEvents, s) }})
+	restarted.inspect = func(context.Context) (string, []CheckItem) { t.Fatal("second launch ran full probes"); return "", nil }
+	restarted.run = func(context.Context) (string, error) { t.Fatal("second launch ran setup"); return "", nil }
+	start := time.Now()
+	restarted.Boot(ctx)
+	elapsed := time.Since(start)
+	if restarted.Status().State != "ready" || len(restartEvents) != 1 || restartEvents[0].State != "ready" {
+		t.Fatalf("second launch did not skip setup: %+v", restartEvents)
 	}
+	if elapsed > 3*time.Second {
+		t.Fatalf("cached restart too slow: %s", elapsed)
+	}
+	t.Logf("PASS: second launch ready in %s without Python/FFmpeg commands or checking events", elapsed)
 	if _, err := os.Stat(p.runtimeDir()); !os.IsNotExist(err) {
 		t.Fatal("model setup duplicated the installed environment")
 	}

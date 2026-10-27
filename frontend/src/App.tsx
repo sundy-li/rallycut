@@ -903,7 +903,11 @@ export default function App() {
   const recheckDependencies = async () => {
     setPending(true);
     try {
-      setState(await api().RefreshDependencies());
+      const next = await api().RefreshDependencies();
+      setState((prev) => ({
+        ...next,
+        setup: next.setup ? mergeSetup(prev.setup, next.setup) : undefined,
+      }));
     } catch (e) {
       setError(String(e));
     } finally {
@@ -1326,6 +1330,14 @@ export default function App() {
             skipStep={skipStep}
             onSkipStep={changeStep}
             onClose={() => setSettingsOpen(false)}
+            onRecheckEnvironment={
+              isDesktop()
+                ? () => {
+                    setSettingsOpen(false);
+                    void recheckDependencies();
+                  }
+                : undefined
+            }
           />
         )}
         {shortcutsOpen && (
@@ -1371,8 +1383,20 @@ export default function App() {
     );
   }
 
+  // Do not flash a first-run/setup UI while the initial RPC is in flight. A
+  // cached backend startup returns ready without ever entering setup state.
+  if (!loaded || state.setup?.state === "opening") {
+    return (
+      <main className="app-opening" aria-busy="true">
+        <div role="status">
+          <strong>rallycut</strong>
+          <span>正在打开…</span>
+        </div>
+      </main>
+    );
+  }
   const setup = state.setup;
-  if (!loaded || !environmentReady) {
+  if (!environmentReady) {
     return (
       <SetupScreen
         state={

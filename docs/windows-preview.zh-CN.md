@@ -1,11 +1,14 @@
 # Windows 首次环境准备测试版
 
-版本：**v0.1.0-alpha.3-windows.3**。这是 Windows x64 测试版，不是原生 Windows ARM64 版；Windows 11 ARM 将模拟运行 x64 程序。以 Release 中实际构建成功的附件为准。
+版本：**v0.1.0-alpha.3-windows.4**。这是 Windows x64 测试版，不是原生 Windows ARM64 版；Windows 11 ARM 将模拟运行 x64 程序。以 Release 中实际构建成功的附件为准。
 
-[打开私有下载页](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3-windows.3)。需要有 `sundy-li/rallycut` 仓库权限；未授权账号可能看到 404。旧 `alpha.2` 保留，网页的默认下载入口暂不切换。
+[打开私有下载页](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3-windows.4)。需要有 `sundy-li/rallycut` 仓库权限；未授权账号可能看到 404。旧 `alpha.2` 保留，网页的默认下载入口暂不切换。
 
 ## 本次更新
 
+- 首次完整验证成功后保存本机成功记录；后续同一版环境无变化时，只做 Go 进程内的轻量文件核对，直接进入软件，不再跑 Python／FFmpeg／模型前向，也不闪首次准备页。
+- Windows 内部命令静默执行，不再反复弹 DOS 窗口；标准错误和退出码仍保留。用户主动打开的文件选择器、资源管理器仍正常显示。
+- **升级到本版第一次尚无新成功记录，仍需静默完整检查一次**；成功后退出并重新打开，才验证上述快速启动。版本、关键文件、模型或路径变化时会重新检查，不用删除项目或数据目录。
 - Windows 完整安装器会直接展开并安装预制 CPU 环境，不再把 ZIP 留给首次启动重复解压。打开后本地检测，只有缺模型时提示约 6 MB 下载。环境包括：私有 Python、锁定的 NumPy／OpenCV／PyTorch、FFmpeg／FFprobe 和 app-local Visual C++ 运行库，不在用户电脑现场执行 pip。
 - 环境包支持校验与断点续传；解压到独立版本目录、真实自检后才切换，失败不改动旧环境和项目。
 - 自检实际加载固定权重并执行一次 CPU 前向；显示错误详情、退出状态、超时提示，可复制反馈。首次模型加载允许更长时间，但不能据截图断言旧错误已彻底修复。
@@ -14,8 +17,8 @@
 ## 下载哪个
 
 - 安装器使用中文、按当前用户安装，并允许 Windows 11 ARM 上的 x64 模拟测试；ARM 上会先提示兼容性限制。卸载保留项目和已下载的环境。
-- **先选安装器**：`RallyCut-0.1.0-alpha.3-windows.3-windows-amd64-setup.exe`。
-- **免安装备用**（同目录必须保留 `RallyCut-runtime-windows-amd64.zip`）：`RallyCut-0.1.0-alpha.3-windows.3-windows-amd64.exe`。它同样使用系统 WebView2，不代表不需要运行环境。
+- **先选安装器**：`RallyCut-0.1.0-alpha.3-windows.4-windows-amd64-setup.exe`。
+- **免安装备用**（同目录必须保留 `RallyCut-runtime-windows-amd64.zip`）：`RallyCut-0.1.0-alpha.3-windows.4-windows-amd64.exe`。它同样使用系统 WebView2，不代表不需要运行环境。
 - **校验清单**：`SHA256SUMS-windows.txt`。
 
 安装包没有正式发布者签名，Windows 可能显示安全提示。先确认来源和校验值；拿不准时联系维护者，不要关闭系统整体安全保护。
@@ -28,9 +31,9 @@
 4. 软件显示环境检测结果。旧环境和项目会保留，本版的运行环境已经在安装时展开。**没有点击“下载模型并开始使用（约 6 MB）”前，不应自动下载**；环境缺失时不应进入项目列表或剪辑界面。
 5. 点击“下载模型并开始使用（约 6 MB）”，观察本地校验、模型下载和真实自检。依赖已在安装时解压，不需要重复准备，模型首次准备仍需要网络（约 6 MB）；建议至少预留 5 GB 空间，首次 ARM 模拟加载可能较慢。
 6. 全部自检通过后才进入项目列表。导入一段短视频，检查播放、分析、人工修正与导出。
-7. 退出、重新打开，完整环境应通过检测，不再重复准备。
+7. 首次成功后退出、重新打开：不应再显示“正在检查已安装内容”的卡片、运行依赖命令或模型前向；直接进入项目列表。连续再重开一次也应如此。首次模型与完整验证仍需要时间，但内部命令不应弹 DOS 窗口。
 
-依赖保存在当前 Windows 用户配置目录的 `RallyCut` 中，不替换系统 Python，不改全局 PATH；找不到数据目录时可在 PowerShell 查看 `Join-Path $env:APPDATA 'RallyCut'`。不要删除有真实项目的数据目录模拟首次运行，优先恢复虚拟机的干净快照。
+内置依赖保存在程序目录的 `runtimes/<本版ID>/`，模型、成功记录和用户数据保存在当前 Windows 用户配置目录的 `RallyCut` 中；不替换系统 Python，不改全局 PATH；找不到数据目录时可在 PowerShell 查看 `Join-Path $env:APPDATA 'RallyCut'`。不要删除有真实项目的数据目录模拟首次运行，优先恢复虚拟机的干净快照。
 
 ## 还要试的异常情况
 

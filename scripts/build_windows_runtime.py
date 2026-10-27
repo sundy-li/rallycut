@@ -18,7 +18,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'build/runtime-output'
 STAGE = ROOT / 'build/runtime-stage'
-VERSION = os.environ.get('VERSION', '0.1.0-alpha.3-windows.3')
+VERSION = os.environ.get('VERSION', '0.1.0-alpha.3-windows.4')
 
 
 def sha(path):

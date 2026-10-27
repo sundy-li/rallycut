@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
+	"rallycut/backend/childproc"
 	"runtime"
 	"strings"
 	"time"
@@ -264,7 +264,7 @@ func (p *Provisioner) ensurePython(ctx context.Context, target platformArtifacts
 	p.update(.10, "python", "下载独立 Python 运行时…", "仅安装到 RallyCut 的私有目录，不修改系统")
 	p.setIndeterminate(true)
 	defer p.setIndeterminate(false)
-	cmd := exec.CommandContext(ctx, uv, "python", "install", catalog().PythonVersion, "--install-dir", filepath.Join(p.runtimeDir(), "python"), "--no-bin", "--no-registry", "--no-config", "--no-progress", "--color", "never")
+	cmd := childproc.CommandContext(ctx, uv, "python", "install", catalog().PythonVersion, "--install-dir", filepath.Join(p.runtimeDir(), "python"), "--no-bin", "--no-registry", "--no-config", "--no-progress", "--color", "never")
 	cmd.Env = append(os.Environ(), "UV_CACHE_DIR="+filepath.Join(p.runtimeDir(), "cache", "uv"), "UV_NATIVE_TLS=true", "UV_PYTHON_INSTALL_REGISTRY=0")
 	writer := &lineWriter{onLine: func(line string) { p.update(.10, "python", "下载独立 Python 运行时…", truncate(line, 180)) }}
 	cmd.Stdout, cmd.Stderr = writer, writer
@@ -326,5 +326,5 @@ func (p *Provisioner) mediaBinary(name string) string {
 func commandWorks(ctx context.Context, binary string, args ...string) bool {
 	check, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	return exec.CommandContext(check, binary, args...).Run() == nil
+	return childproc.CommandContext(check, binary, args...).Run() == nil
 }
