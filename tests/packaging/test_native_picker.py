@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parents[2]
 
 class NativePickerContract(unittest.TestCase):
  def test_video_picker_is_framework_native_not_a_shell(self):
-  source=(ROOT/'backend/media/picker.go').read_text()
+  source=(ROOT/'backend/media/picker.go').read_text(encoding='utf-8')
   self.assertIn('wruntime.OpenMultipleFilesDialog',source)
   for fragile in ['"powershell"','"osascript"','"zenity"','strings.TrimSpace','strings.Split','childproc.','exec.']:
    self.assertNotIn(fragile,source)
