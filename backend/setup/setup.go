@@ -27,41 +27,59 @@ import (
 )
 
 // State is the single source of truth for the first-run setup screen.
+type CheckItem struct {
+	ID    string `json:"id"`
+	Label string `json:"label"`
+	Ready bool   `json:"ready"`
+}
+
 type State struct {
-	State    string  `json:"state"` // required | running | ready | failed
-	Step     string  `json:"step"`  // python | packages | model | verify | ready
-	Message  string  `json:"message"`
-	Detail   string  `json:"detail"`
-	Progress float64 `json:"progress"`
-	Error    string  `json:"error,omitempty"`
-	Python   string  `json:"python,omitempty"`
-	Network  bool    `json:"needs_network"`
+	Revision      uint64      `json:"revision"`
+	Platform      string      `json:"platform"`
+	Checks        []CheckItem `json:"checks,omitempty"`
+	Indeterminate bool        `json:"indeterminate"`
+	State         string      `json:"state"` // checking | required | running | ready | failed
+	Step          string      `json:"step"`  // check | python | media | packages | model | verify | ready
+	Message       string      `json:"message"`
+	Detail        string      `json:"detail"`
+	Progress      float64     `json:"progress"`
+	Error         string      `json:"error,omitempty"`
+	Python        string      `json:"python,omitempty"`
+	Network       bool        `json:"needs_network"`
 }
 
 type Options struct {
-	DataDir string
-	Worker  string
-	Log     *slog.Logger
-	Emit    func(State)
+	DataDir            string
+	Worker             string
+	Log                *slog.Logger
+	Emit               func(State)
+	ForceManagedPython bool // Fresh-install integration tests must not reuse host Python.
+	ForceManagedMedia  bool // Also exercise FFmpeg / FFprobe downloads on developer machines.
 }
 
 // Provisioner installs and verifies the runtime the worker needs.
 type Provisioner struct {
 	options Options
 
-	mu      sync.Mutex
-	state   State
-	running bool
+	mu       sync.Mutex
+	state    State
+	running  bool
+	revision uint64
+	wg       sync.WaitGroup
+	run      func(context.Context) (string, error)
+	inspect  func(context.Context) (string, []CheckItem)
 }
 
 func New(options Options) *Provisioner {
 	if options.Log == nil {
 		options.Log = slog.Default()
 	}
-	return &Provisioner{
+	p := &Provisioner{
 		options: options,
-		state:   State{State: "required", Step: "python", Message: "等待准备运行环境", Network: true},
+		state:   State{State: "checking", Step: "check", Message: "正在检查运行环境…", Indeterminate: true, Platform: platformName()},
 	}
+	p.run, p.inspect = p.provision, p.inspectRuntime
+	return p
 }
 
 func (p *Provisioner) runtimeDir() string { return filepath.Join(p.options.DataDir, "runtime") }
@@ -77,25 +95,85 @@ func venvPython(dir string) string {
 	return filepath.Join(dir, "bin", "python3")
 }
 
+func (p *Provisioner) snapshotLocked() State {
+	p.revision++
+	p.state.Revision = p.revision
+	state := p.state
+	state.Checks = append([]CheckItem(nil), state.Checks...)
+	return state
+}
+
 func (p *Provisioner) Status() State {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	return p.state
+	state := p.state
+	state.Checks = append([]CheckItem(nil), state.Checks...)
+	return state
 }
 
-// Ready reports whether the managed runtime already satisfies the app.
+func (p *Provisioner) inspectRuntime(ctx context.Context) (string, []CheckItem) {
+	python := analysis.Python(p.options.DataDir)
+	checks := []CheckItem{
+		{ID: "python", Label: "Python 运行时", Ready: supportsVenv(python)},
+		{ID: "media", Label: "视频处理工具 FFmpeg / FFprobe", Ready: commandWorks(ctx, p.mediaBinary("ffmpeg"), "-version") && commandWorks(ctx, p.mediaBinary("ffprobe"), "-version")},
+		{ID: "packages", Label: "视觉分析依赖"},
+		{ID: "model", Label: "视觉模型"},
+	}
+	if checks[0].Ready && ctx.Err() == nil {
+		checks[2].Ready = analysis.CheckPython(python)
+	}
+	if checks[2].Ready && ctx.Err() == nil {
+		checks[3].Ready, _ = analysis.ModelDetail(python, p.options.Worker)
+	}
+	return python, checks
+}
+func allReady(checks []CheckItem) bool {
+	if len(checks) == 0 {
+		return false
+	}
+	for _, check := range checks {
+		if !check.Ready {
+			return false
+		}
+	}
+	return true
+}
+
+// Detect never downloads anything. A missing dependency leaves the consent
+// screen visible until the user explicitly calls Start.
+func (p *Provisioner) Detect(ctx context.Context) {
+	p.mu.Lock()
+	if p.running {
+		p.mu.Unlock()
+		return
+	}
+	p.running = true
+	p.state = State{State: "checking", Step: "check", Message: "正在检查运行环境…", Platform: platformName(), Indeterminate: true}
+	state := p.snapshotLocked()
+	p.wg.Add(1)
+	p.mu.Unlock()
+	p.emit(state)
+	go func() {
+		defer p.wg.Done()
+		python, checks := p.inspect(ctx)
+		p.mu.Lock()
+		p.running = false
+		p.state = State{State: "required", Step: "check", Message: "首次使用需要准备运行环境", Platform: platformName(), Checks: checks, Network: true}
+		if allReady(checks) && ctx.Err() == nil {
+			p.state = State{State: "ready", Step: "ready", Message: "运行环境已就绪", Platform: platformName(), Checks: checks, Python: python, Progress: 1}
+		}
+		state := p.snapshotLocked()
+		p.mu.Unlock()
+		if ctx.Err() == nil {
+			p.emit(state)
+		}
+	}()
+}
+func (p *Provisioner) Wait() { p.wg.Wait() }
+
 func (p *Provisioner) Ready() (string, bool) {
-	python := venvPython(p.venvDir())
-	if _, err := os.Stat(python); err != nil {
-		return "", false
-	}
-	if !analysis.CheckPython(python) {
-		return "", false
-	}
-	if ok, _ := analysis.ModelDetail(python, p.options.Worker); !ok {
-		return "", false
-	}
-	return python, true
+	python, checks := p.inspect(context.Background())
+	return python, allReady(checks)
 }
 
 func (p *Provisioner) MarkReady(python string) {
@@ -107,8 +185,10 @@ func (p *Provisioner) MarkRequired() {
 }
 
 func (p *Provisioner) setState(state State) {
+	state.Platform = platformName()
 	p.mu.Lock()
 	p.state = state
+	state = p.snapshotLocked()
 	p.mu.Unlock()
 	p.emit(state)
 }
@@ -119,30 +199,30 @@ func (p *Provisioner) emit(state State) {
 	}
 }
 
-// Start provisions the runtime in the background. Repeated calls are no-ops.
+// Start only runs after explicit consent. Repeated clicks never start a second job.
 func (p *Provisioner) Start(parent context.Context) {
-	if python, ok := p.Ready(); ok {
-		p.MarkReady(python)
-		return
-	}
 	p.mu.Lock()
 	if p.running || p.state.State == "ready" {
 		p.mu.Unlock()
 		return
 	}
 	p.running = true
-	p.state = State{State: "running", Step: "python", Progress: 0.02, Message: "检查 Python 运行时…", Network: true}
-	state := p.state
+	p.state = State{State: "running", Step: "python", Platform: platformName(), Checks: p.state.Checks, Progress: 0.02, Message: "准备 Python 运行时…", Network: true}
+	state := p.snapshotLocked()
+	p.wg.Add(1)
 	p.mu.Unlock()
 	p.emit(state)
 
 	go func() {
-		python, err := p.provision(parent)
+		defer p.wg.Done()
+		ctx, cancel := context.WithTimeout(parent, time.Hour)
+		defer cancel()
+		python, err := p.run(ctx)
 		p.mu.Lock()
 		p.running = false
 		switch {
 		case err == nil:
-			p.state = State{State: "ready", Step: "ready", Progress: 1, Message: "运行环境已就绪", Python: python}
+			p.state = State{State: "ready", Step: "ready", Progress: 1, Message: "运行环境已就绪", Python: python, Platform: platformName(), Checks: p.state.Checks}
 		case parent.Err() != nil:
 			p.state.State = "required"
 			p.state.Message = "初始化已中断"
@@ -153,43 +233,65 @@ func (p *Provisioner) Start(parent context.Context) {
 			p.state.Error = err.Error()
 			p.options.Log.Error("setup failed", "error", err)
 		}
-		state := p.state
+		p.state.Indeterminate = false
+		state := p.snapshotLocked()
 		p.mu.Unlock()
-		p.emit(state)
+		if parent.Err() == nil {
+			p.emit(state)
+		}
 	}()
 }
 
 func (p *Provisioner) provision(ctx context.Context) (string, error) {
-	base, err := FindPython()
+	target, err := p.target()
 	if err != nil {
 		return "", err
 	}
-	p.update(0.06, "python", "使用 Python "+base, "")
+	base, err := p.ensurePython(ctx, target)
+	if err != nil {
+		return "", err
+	}
+	p.update(0.16, "python", "创建应用专用 Python 环境…", "")
 	if err := p.ensureVenv(ctx, base); err != nil {
 		return "", err
 	}
 	python := venvPython(p.venvDir())
+	if err := p.ensureMedia(ctx, target); err != nil {
+		return "", fmt.Errorf("准备视频处理工具失败：%w", err)
+	}
 	if err := p.installPackages(ctx, python); err != nil {
 		return "", fmt.Errorf("安装视觉依赖失败：%w", err)
 	}
 	if err := p.ensureWeights(ctx); err != nil {
 		return "", fmt.Errorf("下载模型权重失败：%w", err)
 	}
-	p.update(0.96, "verify", "自检运行环境…", "导入 OpenCV / NumPy / PyTorch")
-	if ok, detail := analysis.PythonDetail(python); !ok {
-		return "", fmt.Errorf("依赖安装完成，但仍无法导入 OpenCV / NumPy：%s", strings.TrimSpace(detail))
+	p.update(0.96, "verify", "检查视频工具、依赖与模型…", "只有全部通过才会进入剪辑界面")
+	p.setIndeterminate(true)
+	defer p.setIndeterminate(false)
+	verifiedPython, checks := p.inspect(ctx)
+	p.mu.Lock()
+	p.state.Checks = checks
+	p.mu.Unlock()
+	if !allReady(checks) {
+		var missing []string
+		for _, check := range checks {
+			if !check.Ready {
+				missing = append(missing, check.Label)
+			}
+		}
+		return "", fmt.Errorf("环境自检未通过：%s，请重试或联系维护者", strings.Join(missing, "、"))
 	}
-	if ok, detail := analysis.ModelDetail(python, p.options.Worker); !ok {
-		return "", fmt.Errorf("模型自检失败：%s", strings.TrimSpace(detail))
-	}
-	return python, nil
+	return verifiedPython, ctx.Err()
 }
 
 func (p *Provisioner) ensureVenv(ctx context.Context, base string) error {
-	if _, err := os.Stat(venvPython(p.venvDir())); err == nil {
+	if commandWorks(ctx, venvPython(p.venvDir()), "-c", "import sys,venv,pip") {
 		return nil
 	}
-	p.update(0.10, "python", "创建隔离的虚拟环境…", p.venvDir())
+	if err := os.RemoveAll(p.venvDir()); err != nil {
+		return err
+	}
+	p.update(0.18, "python", "创建隔离的虚拟环境…", p.venvDir())
 	if err := os.MkdirAll(p.runtimeDir(), 0700); err != nil {
 		return err
 	}
@@ -206,31 +308,48 @@ func (p *Provisioner) ensureVenv(ctx context.Context, base string) error {
 func (p *Provisioner) installPackages(ctx context.Context, python string) error {
 	names := []string{"requirements.txt", "requirements-model.txt"}
 	for _, name := range names {
-		data, err := vision.Requirements.ReadFile(name)
+		data, err := platformRequirements(name, runtime.GOOS, runtime.GOARCH)
 		if err != nil {
 			return err
-		}
-		if name == "requirements-model.txt" && runtime.GOOS == "windows" {
-			// The ONNX backend needs DirectML on Windows; one pip pass installs both.
-			if extra, readErr := vision.Requirements.ReadFile("requirements-windows.txt"); readErr == nil {
-				data = append(append(data, '\n'), extra...)
-			}
 		}
 		if err := os.WriteFile(filepath.Join(p.runtimeDir(), name), data, 0600); err != nil {
 			return err
 		}
 	}
-	if err := p.pip(ctx, python, 0.12, 0.42, "安装基础依赖 numpy / OpenCV", filepath.Join(p.runtimeDir(), names[0])); err != nil {
+	if err := p.pip(ctx, python, 0.45, 0.56, "安装基础依赖 numpy / OpenCV", filepath.Join(p.runtimeDir(), names[0])); err != nil {
 		return err
 	}
-	return p.pip(ctx, python, 0.42, 0.84, "安装推理依赖 PyTorch（首次下载较大）", filepath.Join(p.runtimeDir(), names[1]))
+	return p.pip(ctx, python, 0.56, 0.82, "安装推理依赖 PyTorch（首次下载较大）", filepath.Join(p.runtimeDir(), names[1]))
+}
+
+func platformRequirements(name, goos, arch string) ([]byte, error) {
+	data, err := vision.Requirements.ReadFile(name)
+	if err != nil {
+		return nil, err
+	}
+	// PyTorch stopped publishing Intel macOS wheels after 2.2.x. Its last
+	// Python 3.12 build also requires NumPy 1.x for the NumPy bridge.
+	if goos == "darwin" && arch == "amd64" {
+		data = bytes.ReplaceAll(data, []byte("numpy==2.2.6"), []byte("numpy==1.26.4"))
+		data = bytes.ReplaceAll(data, []byte("torch==2.8.0"), []byte("torch==2.2.2"))
+	}
+	if name == "requirements-model.txt" && goos == "windows" {
+		extra, err := vision.Requirements.ReadFile("requirements-windows.txt")
+		if err != nil {
+			return nil, err
+		}
+		data = append(append(data, '\n'), extra...)
+	}
+	return data, nil
 }
 
 func (p *Provisioner) pip(ctx context.Context, python string, from, to float64, label, requirements string) error {
 	p.update(from, "packages", label, "")
+	p.setIndeterminate(true)
+	defer p.setIndeterminate(false)
 	args := []string{"-m", "pip", "install", "--disable-pip-version-check", "--no-input", "--progress-bar", "off", "-r", requirements}
 	cmd := exec.CommandContext(ctx, python, args...)
-	cmd.Env = append(os.Environ(), "PIP_DISABLE_PIP_VERSION_CHECK=1")
+	cmd.Env = append(os.Environ(), "PIP_DISABLE_PIP_VERSION_CHECK=1", "PIP_CACHE_DIR="+filepath.Join(p.runtimeDir(), "cache", "pip"), "PYTHONNOUSERSITE=1")
 
 	var last time.Time
 	writer := &lineWriter{onLine: func(line string) {
@@ -260,6 +379,11 @@ func (w *lineWriter) Write(data []byte) (int, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.all.Write(data)
+	if w.all.Len() > 16384 {
+		keep := append([]byte(nil), w.all.Bytes()[w.all.Len()-8192:]...)
+		w.all.Reset()
+		w.all.Write(keep)
+	}
 	w.buf = append(w.buf, data...)
 	for {
 		index := bytes.IndexAny(w.buf, "\r\n")
@@ -368,7 +492,8 @@ func download(ctx context.Context, url, dest string, size int64, progress func(w
 		return err
 	}
 	request.Header.Set("User-Agent", "RallyCut/1.0")
-	response, err := http.DefaultClient.Do(request)
+	client := &http.Client{Timeout: 30 * time.Minute}
+	response, err := client.Do(request)
 	if err != nil {
 		return err
 	}
@@ -380,18 +505,26 @@ func download(ctx context.Context, url, dest string, size int64, progress func(w
 	if total <= 0 {
 		total = size
 	}
-	temp := dest + ".part"
-	file, err := os.Create(temp)
+	file, err := os.CreateTemp(filepath.Dir(dest), ".download-*")
 	if err != nil {
 		return err
 	}
+	temp := file.Name()
 	defer func() {
 		file.Close()
 		_ = os.Remove(temp)
 	}()
 	reader := &progressReader{reader: response.Body, total: total, onProgress: progress}
-	if _, err := io.Copy(file, reader); err != nil {
+	var source io.Reader = reader
+	if size > 0 {
+		source = io.LimitReader(reader, size+1)
+	}
+	written, err := io.Copy(file, source)
+	if err != nil {
 		return err
+	}
+	if size > 0 && written != size {
+		return fmt.Errorf("下载大小不匹配：%d / %d 字节", written, size)
 	}
 	if err := file.Close(); err != nil {
 		return err
@@ -399,6 +532,14 @@ func download(ctx context.Context, url, dest string, size int64, progress func(w
 	if total > 0 {
 		if info, err := os.Stat(temp); err == nil && info.Size() != total {
 			return fmt.Errorf("下载不完整：%d / %d 字节", info.Size(), total)
+		}
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if runtime.GOOS == "windows" {
+		if err := os.Remove(dest); err != nil && !os.IsNotExist(err) {
+			return err
 		}
 	}
 	return os.Rename(temp, dest)
@@ -422,6 +563,14 @@ func (r *progressReader) Read(buffer []byte) (int, error) {
 	return n, err
 }
 
+func (p *Provisioner) setIndeterminate(value bool) {
+	p.mu.Lock()
+	p.state.Indeterminate = value
+	state := p.snapshotLocked()
+	p.mu.Unlock()
+	p.emit(state)
+}
+
 func (p *Provisioner) update(progress float64, step, message, detail string) {
 	p.mu.Lock()
 	if p.state.State != "running" {
@@ -437,10 +586,8 @@ func (p *Provisioner) update(progress float64, step, message, detail string) {
 	if message != "" {
 		p.state.Message = message
 	}
-	if detail != "" {
-		p.state.Detail = detail
-	}
-	state := p.state
+	p.state.Detail = detail
+	state := p.snapshotLocked()
 	p.mu.Unlock()
 	p.emit(state)
 }
@@ -454,10 +601,10 @@ func FindPython() (string, error) {
 				return path, nil
 			}
 		}
-		candidates = []string{"python", "python3", "python3.12"}
+		candidates = []string{"python3.12", "python3.11", "python3.10", "python", "python3"}
 	} else {
 		candidates = []string{
-			"python3.12", "python3",
+			"python3.12", "python3.11", "python3.10", "python3",
 			"/opt/homebrew/bin/python3.12", "/opt/homebrew/bin/python3",
 			"/usr/local/bin/python3.12", "/usr/local/bin/python3",
 		}
@@ -478,6 +625,11 @@ func FindPython() (string, error) {
 }
 
 func supportsVenv(path string) bool {
+	// Windows Store app-execution aliases can open the Store instead of running
+	// Python. Detection must not trigger an interactive system installation.
+	if strings.Contains(strings.ToLower(filepath.ToSlash(strings.ReplaceAll(path, "\\", "/"))), "/microsoft/windowsapps/") {
+		return false
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	out, err := exec.CommandContext(ctx, path, "-c", "import sys,venv;print('%d.%d' % sys.version_info[:2])").Output()
@@ -496,7 +648,7 @@ func supportsVenv(path string) bool {
 	if err != nil {
 		return false
 	}
-	return major == 3 && minor >= 10
+	return major == 3 && minor >= 10 && minor <= 12
 }
 
 func fileSHA256(path string) (string, error) {

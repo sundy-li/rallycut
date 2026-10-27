@@ -1,0 +1,92 @@
+name: Windows preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Windows test version (without v)'
+        required: true
+        default: '0.1.0-alpha.3-windows.1'
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-preview-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: Windows x64 environment and installer
+    runs-on: windows-latest
+    timeout-minutes: 40
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate test version
+        shell: pwsh
+        run: |
+          if ($env:VERSION -notmatch '^\d+\.\d+\.\d+-[A-Za-z0-9.-]+$') {
+            throw 'Expected a prerelease version without v'
+          }
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: extractions/setup-just@v2
+      - name: Test environment provisioning logic
+        run: go test ./backend/setup ./backend/media
+      - name: Verify real fresh Windows runtime (do not reuse runner tools)
+        shell: pwsh
+        env:
+          RALLYCUT_SETUP_E2E: '1'
+        run: |
+          go test -v ./backend/setup -run '^TestProvisionerInstallsRuntime$' -count=1 -timeout 18m 2>&1 | Tee-Object -FilePath windows-environment-test.log
+          if ($LASTEXITCODE -ne 0) { throw 'Fresh Windows runtime preparation failed' }
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
+      - name: Install NSIS and expose it to Git Bash
+        shell: pwsh
+        run: |
+          choco install nsis -y --no-progress
+          if ($LASTEXITCODE -notin @(0, 3010)) { throw 'NSIS installation failed' }
+          $nsis = Join-Path ${env:ProgramFiles(x86)} 'NSIS'
+          if (!(Test-Path (Join-Path $nsis 'makensis.exe'))) { throw 'makensis.exe not found' }
+          Add-Content -Path $env:GITHUB_PATH -Value $nsis
+      - run: npm --prefix frontend ci
+      - name: Build x64 application and installer
+        shell: bash
+        run: just package-windows
+      - name: Require installer and record checksums
+        shell: pwsh
+        run: |
+          $root = 'build/release'
+          $app = Join-Path $root "RallyCut-$env:VERSION-windows-amd64.exe"
+          $installer = Join-Path $root "RallyCut-$env:VERSION-windows-amd64-setup.exe"
+          if (!(Test-Path $app) -or !(Test-Path $installer)) { throw 'Both portable EXE and NSIS installer are required' }
+          $lines = Get-ChildItem $root -Filter '*.exe' | Sort-Object Name | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($_.Name)"
+          }
+          $lines | Set-Content -Encoding utf8NoBOM (Join-Path $root 'SHA256SUMS-windows.txt')
+      - name: Upload installer and portable application
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-preview-${{ inputs.version }}
+          path: build/release/*
+          retention-days: 14
+          if-no-files-found: error
+      - name: Upload real environment test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-environment-log
+          path: windows-environment-test.log
+          retention-days: 14
+          if-no-files-found: ignore

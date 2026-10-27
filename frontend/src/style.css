@@ -1922,8 +1922,11 @@ kbd {
 }
 
 /* First-run provisioning gate */
+body:has(.setup-screen) {
+  min-width: 0;
+}
 .setup-screen {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1976,7 +1979,8 @@ kbd {
 .setup-progress-bar {
   height: 100%;
   background: linear-gradient(90deg, #7fae5b, #b7e48e);
-  transition: width 0.3s ease;
+  transform-origin: left;
+  transition: transform 0.3s ease;
 }
 .setup-progress.failed .setup-progress-bar {
   background: #b46a5a;
@@ -2008,6 +2012,77 @@ kbd {
 .setup-steps li.active {
   color: #d9e9cd;
 }
+.setup-steps li.failed {
+  color: #e0b3a5;
+}
+.setup-step-status {
+  margin-left: auto;
+  color: #8fa084;
+  font-size: 10px;
+}
+.setup-platform {
+  color: #b8cfaa;
+  margin-top: 22px;
+  font-size: 12px;
+}
+.setup-progress.indeterminate {
+  position: relative;
+}
+.setup-progress.indeterminate:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, #d2edb766, transparent);
+  transform: translateX(-100%);
+  animation: setup-wait 1.8s ease-in-out infinite;
+}
+@keyframes setup-wait {
+  to {
+    transform: translateX(100%);
+  }
+}
+.setup-consent,
+.setup-blocked-note {
+  color: #93a089;
+  font-size: 11px;
+  line-height: 1.9;
+}
+.setup-consent {
+  margin: 18px 0;
+}
+.setup-blocked-note {
+  margin: 16px 0 0;
+}
+.setup-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.setup-actions .button {
+  min-height: 40px;
+}
+.setup-log {
+  margin: 5px 0;
+  font: 10px/1.6 var(--mono);
+  color: #7f8f81;
+  overflow-wrap: anywhere;
+  max-height: 54px;
+  overflow: auto;
+}
+@media (max-width: 600px) {
+  .setup-screen {
+    padding: 16px;
+  }
+  .setup-card {
+    padding: 22px 18px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .setup-progress.indeterminate:after {
+    animation: none;
+    transform: none;
+  }
+}
 .setup-step-icon {
   width: 16px;
   height: 16px;
@@ -2028,9 +2103,8 @@ kbd {
   font-family: var(--mono);
   font-size: 9px;
   color: #7f8f81;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
 }
 .setup-error {
   margin-top: 12px;
@@ -2043,7 +2117,8 @@ kbd {
   border-radius: 6px;
   background: #2a1d19;
   color: #e0b3a5;
-  font-size: 10px;
+  font-size: 11px;
+  overflow-wrap: anywhere;
 }
 .setup-error .button {
   margin-left: auto;

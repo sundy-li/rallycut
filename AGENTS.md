@@ -69,6 +69,7 @@ UI 回归入口是 `tests/ui/test_workbench.py`，需 Playwright / Chrome 和其
 - `build/bin/RallyCut.app` 可能被 `wails dev` 覆盖为开发二进制，不能作为稳定独立版。用 `just build` 发布、`just run` 启动 `build/release`。
 - `just run` 不会自动重建已有旧包。修改后先构建，并提醒用户退出旧窗口；不得杀掉用户无关进程。
 - skill 必须能复制到仓库外运行，不依赖 Go / Node / Wails。权重单独显式安装，分析不自动联网。
+- 桌面首次启动先异步、本地检测；缺依赖必须由用户明确点击后才准备，不能恢复 Startup / useEffect 自动安装。Python、FFmpeg / FFprobe、分析依赖与模型全部自检通过才放行；前后端与快捷键均设门禁。平台资源与哈希在 `backend/setup/artifacts.json`，下载到私有目录，不改全局 PATH / 系统 Python。Intel Mac 使用兼容的 torch 2.2.2 / NumPy 1.26.4，不能装不存在的 torch 2.8 Intel wheel。状态 revision 防止迟到 RPC 覆盖新事件；下载显示真实字节，pip 等显示阶段进度，未就绪不显示 100%。详见 `docs/first-run-setup.md`。
 
 ## 视频与模型约束
 

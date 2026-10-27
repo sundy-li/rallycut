@@ -57,7 +57,7 @@ func CheckModel(python, worker string) bool {
 func ModelDetail(python, worker string) (bool, string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	code := "import sys,hashlib,torch;sys.path.insert(0,sys.argv[1]);from pretrained import locate_weights,WEIGHTS_SHA256;assert hashlib.sha256(locate_weights().read_bytes()).hexdigest()==WEIGHTS_SHA256"
+	code := "import sys,hashlib,torch,numpy as np;torch.from_numpy(np.zeros((1,),dtype=np.float32)).numpy();sys.path.insert(0,sys.argv[1]);from pretrained import locate_weights,WEIGHTS_SHA256;assert hashlib.sha256(locate_weights().read_bytes()).hexdigest()==WEIGHTS_SHA256"
 	out, err := exec.CommandContext(ctx, python, "-c", code, filepath.Dir(worker)).CombinedOutput()
 	if err != nil {
 		if ctx.Err() != nil {

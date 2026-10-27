@@ -71,19 +71,32 @@ func TestProvisionerInstallsRuntime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	events := make(chan State, 256)
 	provisioner := New(Options{
-		DataDir: dir,
-		Worker:  worker,
-		Log:     slog.Default(),
-		Emit:    func(State) {},
+		ForceManagedPython: true,
+		ForceManagedMedia:  true,
+		DataDir:            dir,
+		Worker:             worker,
+		Log:                slog.Default(),
+		Emit: func(state State) {
+			select {
+			case events <- state:
+			default:
+			}
+		},
 	})
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 	provisioner.Start(ctx)
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
+	defer provisioner.Wait()
 	for {
-		state := provisioner.Status()
+		var state State
+		select {
+		case state = <-events:
+			t.Logf("%s %.0f%% %s %s", state.Step, state.Progress*100, state.Message, state.Detail)
+		case <-ctx.Done():
+			t.Fatalf("setup timed out: %+v", provisioner.Status())
+		}
 		switch state.State {
 		case "ready":
 			if !analysis.CheckPython(state.Python) {
@@ -95,11 +108,6 @@ func TestProvisionerInstallsRuntime(t *testing.T) {
 			return
 		case "failed", "required":
 			t.Fatalf("setup ended in %s: %s", state.State, state.Error)
-		}
-		select {
-		case <-ctx.Done():
-			t.Fatalf("setup timed out: %+v", state)
-		case <-ticker.C:
 		}
 	}
 }

@@ -82,13 +82,6 @@ func (a *App) Startup(ctx context.Context) {
 	}
 	a.worker, err = vision.Install(filepath.Join(a.dataDir, "workers", analysis.Model+"-"+vision.Digest()[:16]))
 	a.python = analysis.Python(a.dataDir)
-	a.visionReady = analysis.CheckPython(a.python)
-	if err == nil {
-		a.modelReady, a.modelError = analysis.ModelDetail(a.python, a.worker)
-	}
-	if a.log != nil {
-		a.log.Info("environment check", "python", a.python, "worker", a.worker, "vision_ready", a.visionReady, "model_ready", a.modelReady, "model_error", a.modelError)
-	}
 	if err != nil {
 		a.initError = err.Error()
 		return
@@ -111,17 +104,6 @@ func (a *App) Startup(ctx context.Context) {
 			}
 		},
 	})
-	if python, ok := a.setup.Ready(); ok {
-		a.python = python
-		a.visionReady, a.modelReady = true, true
-		a.setup.MarkReady(python)
-	} else if a.visionReady && a.modelReady {
-		// A developer checkout with a complete .venv needs no provisioning.
-		a.setup.MarkReady(a.python)
-	} else {
-		a.setup.MarkRequired()
-		go a.setup.Start(a.ctx)
-	}
 	var last struct {
 		Path string `json:"path"`
 	}
@@ -147,6 +129,8 @@ func (a *App) Startup(ctx context.Context) {
 		}
 	}
 	a.log.Info("application started", "data_dir", a.dataDir, "worker_digest", vision.Digest(), "python", a.python)
+	// Detection is local-only and asynchronous. Never install before consent.
+	a.setup.Detect(a.ctx)
 }
 
 func (a *App) Shutdown(context.Context) {
@@ -155,6 +139,9 @@ func (a *App) Shutdown(context.Context) {
 	}
 	a.manager.Cancel()
 	a.manager.Wait()
+	if a.setup != nil {
+		a.setup.Wait()
+	}
 	if a.logFile != nil {
 		_ = a.logFile.Close()
 	}
@@ -164,41 +151,27 @@ func (a *App) GetState() State {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 	deps := map[string]bool{}
-	for _, name := range []string{"ffmpeg", "ffprobe", "python3"} {
+	for _, name := range []string{"ffmpeg", "ffprobe"} {
 		_, err := exec.LookPath(media.Binary(name))
 		deps[name] = err == nil
 	}
+	_, pythonErr := exec.LookPath(a.python)
+	deps["python3"] = a.python != "" && pythonErr == nil
 	deps["opencv_numpy"] = a.visionReady
 	deps["blurball_weights_torch"] = a.modelReady
 	state := State{Project: project.Clone(a.current), ProjectPath: a.projectPath, Dependencies: deps, Error: a.initError, CanUndo: a.current != nil && len(a.history.undo) > 0, CanRedo: a.current != nil && len(a.history.redo) > 0}
 	if a.setup != nil {
 		state.Setup = a.setup.Status()
 	} else {
-		state.Setup = setupenv.State{State: "ready", Progress: 1}
+		state.Setup = a.setupUnavailable()
 	}
 	return state
 }
 
-// RefreshDependencies re-runs the Python and model probes so a transient
-// failure (slow torch import, freshly installed weights) can be retried
-// without restarting the app.
+// RefreshDependencies rechecks every prerequisite without downloading anything.
 func (a *App) RefreshDependencies() State {
-	a.mu.RLock()
-	python, worker := a.python, a.worker
-	a.mu.RUnlock()
-	if python != "" && worker != "" {
-		visionReady := analysis.CheckPython(python)
-		var modelReady bool
-		var modelError string
-		if visionReady {
-			modelReady, modelError = analysis.ModelDetail(python, worker)
-		}
-		a.mu.Lock()
-		a.visionReady, a.modelReady, a.modelError = visionReady, modelReady, modelError
-		a.mu.Unlock()
-		if a.log != nil {
-			a.log.Info("environment recheck", "python", python, "vision_ready", visionReady, "model_ready", modelReady, "model_error", modelError)
-		}
+	if a.setup != nil {
+		a.setup.Detect(a.ctx)
 	}
 	return a.GetState()
 }
@@ -207,7 +180,7 @@ func (a *App) ready() error {
 	if a.ctx == nil || a.dataDir == "" || a.worker == "" {
 		return fmt.Errorf("应用尚未初始化")
 	}
-	if a.setup != nil && a.setup.Status().State != "ready" {
+	if a.setup == nil || a.setup.Status().State != "ready" {
 		return fmt.Errorf("运行环境尚未准备好，请等待初始化完成")
 	}
 	if a.manager.Busy() {
@@ -1016,15 +989,23 @@ func (a *App) serveHTTP(w http.ResponseWriter, r *http.Request) {
 // SetupStatus reports first-run provisioning progress for the setup screen.
 func (a *App) SetupStatus() setupenv.State {
 	if a.setup == nil {
-		return setupenv.State{State: "ready", Progress: 1}
+		return a.setupUnavailable()
 	}
 	return a.setup.Status()
 }
 
-// StartSetup retries provisioning after a failure.
+func (a *App) setupUnavailable() setupenv.State {
+	message := a.initError
+	if message == "" {
+		message = "应用尚未完成初始化，请重新启动或联系维护者"
+	}
+	return setupenv.State{State: "failed", Step: "check", Message: "无法检查运行环境", Error: message}
+}
+
+// StartSetup starts provisioning only after user consent, or retries a failure.
 func (a *App) StartSetup() setupenv.State {
 	if a.setup == nil {
-		return setupenv.State{State: "ready", Progress: 1}
+		return a.setupUnavailable()
 	}
 	a.setup.Start(a.ctx)
 	return a.setup.Status()

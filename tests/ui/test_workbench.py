@@ -50,7 +50,7 @@ BRIDGE = """
   GetState:async()=>{
    const p=copy(project);
    if(window.__noGeometry && p?.analysis){p.analysis.table_bounds=[];p.analysis.table_segments=[{start:0,end:30,bounds:[],method:'unavailable'}];p.analysis.geometry_available=false;p.analysis.table_mode='off';}
-   return {project:p,project_path:'/test/20261024-152433-rallycut.json',dependencies:{ffmpeg:true,ffprobe:true,python3:true,opencv_numpy:true,blurball_weights_torch:true},error:'',can_undo:Boolean(p)&&history.undo.length>0,can_redo:Boolean(p)&&history.redo.length>0};},
+   return {setup:{state:'ready',step:'ready',progress:1,message:'fixture ready',detail:''},project:p,project_path:'/test/20261024-152433-rallycut.json',dependencies:{ffmpeg:true,ffprobe:true,python3:true,opencv_numpy:true,blurball_weights_torch:true},error:'',can_undo:Boolean(p)&&history.undo.length>0,can_redo:Boolean(p)&&history.redo.length>0};},
   Undo:async()=>{window.__calls.push('undo');return stepTimeline(history.undo,history.redo);},
   Redo:async()=>{window.__calls.push('redo');return stepTimeline(history.redo,history.undo);},
   DeleteProject:async(path)=>{window.__calls.push('delete-project');project=null;const i=recentProjects.findIndex(item=>item.path===path);if(i>=0)recentProjects.splice(i,1);},

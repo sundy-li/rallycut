@@ -11,14 +11,28 @@ import (
 	"os/exec"
 	"path/filepath"
 	"rallycut/backend/project"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
 )
 
-func Binary(name string) string {
+func Binary(name string) string { return BinaryFor(os.Getenv("RALLYCUT_DATA_DIR"), name) }
+
+// BinaryFor finds app-managed tools even when Finder / Explorer supplies no PATH.
+func BinaryFor(dataDir, name string) string {
 	if p := os.Getenv("RALLYCUT_" + strings.ToUpper(name)); p != "" {
 		return p
+	}
+	if dataDir != "" && (name == "ffmpeg" || name == "ffprobe") {
+		file := name
+		if runtime.GOOS == "windows" {
+			file += ".exe"
+		}
+		p := filepath.Join(dataDir, "runtime", "bin", file)
+		if info, err := os.Stat(p); err == nil && !info.IsDir() {
+			return p
+		}
 	}
 	if p, err := exec.LookPath(name); err == nil {
 		return p

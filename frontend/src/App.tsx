@@ -107,6 +107,7 @@ import { liveOverlay, mergeOverlay } from "./lib/stream";
 import { clampedBoundary, markedRange } from "./lib/marks";
 import type { OverlayStream } from "./lib/stream";
 import { SetupScreen } from "./components/SetupScreen";
+import { mergeSetup } from "./lib/setup";
 import TrajectoryOverlay, {
   validTableBounds,
 } from "./components/TrajectoryOverlay";
@@ -372,15 +373,37 @@ export default function App() {
   );
 
   const [loaded, setLoaded] = useState(false);
+  const environmentReady = !isDesktop() || state.setup?.state === "ready";
   const [setupRetrying, setSetupRetrying] = useState(false);
-  const retrySetup = async () => {
+  const retrySetup = async (recheck = false) => {
     if (setupRetrying) return;
     setSetupRetrying(true);
     try {
-      const next = await api().StartSetup();
-      setState((prev) => ({ ...prev, setup: next }));
+      setError("");
+      if (recheck) {
+        const next = await api().RefreshDependencies();
+        setState((prev) => ({
+          ...next,
+          setup: next.setup ? mergeSetup(prev.setup, next.setup) : undefined,
+        }));
+      } else {
+        const next = await api().StartSetup();
+        setState((prev) => ({ ...prev, setup: mergeSetup(prev.setup, next) }));
+        if (next.state === "ready") await refresh();
+      }
     } catch (e) {
-      setError(String(e));
+      setState((prev) => ({
+        ...prev,
+        setup: {
+          ...prev.setup,
+          state: "failed",
+          step: prev.setup?.step || "check",
+          progress: prev.setup?.progress || 0,
+          message: "无法准备环境",
+          detail: "",
+          error: String(e),
+        },
+      }));
     } finally {
       setSetupRetrying(false);
     }
@@ -392,9 +415,13 @@ export default function App() {
     }
     try {
       const next = await api().GetState();
-      setState(next);
+      setState((prev) => ({
+        ...next,
+        setup: next.setup ? mergeSetup(prev.setup, next.setup) : undefined,
+      }));
       setJob(next.project?.job);
       if (next.error) setError(next.error);
+      if (next.setup?.state !== "ready") return;
       let projects: RecentProject[] = [];
       try {
         const recent = await api().ListRecentProjects();
@@ -426,6 +453,19 @@ export default function App() {
         ];
       }
       setRecentProjects(projects);
+    } catch (e) {
+      setState((prev) => ({
+        ...prev,
+        setup: {
+          state: "failed",
+          step: "check",
+          progress: 0,
+          message: "无法检查运行环境",
+          detail: "",
+          error: String(e),
+        },
+      }));
+      throw e;
     } finally {
       setLoaded(true);
     }
@@ -433,21 +473,13 @@ export default function App() {
   useEffect(
     () =>
       subscribeSetup((next) => {
-        setState((prev) => ({ ...prev, setup: next }));
+        setState((prev) => ({ ...prev, setup: mergeSetup(prev.setup, next) }));
         if (next.state === "ready") {
           void refresh().catch((e) => setError(String(e)));
         }
       }),
     [refresh],
   );
-  useEffect(() => {
-    if (loaded && isDesktop() && state.setup?.state === "required") {
-      void api()
-        .StartSetup()
-        .then((next) => setState((prev) => ({ ...prev, setup: next })))
-        .catch((e) => setError(String(e)));
-    }
-  }, [loaded, state.setup?.state]);
   useEffect(() => {
     void refresh().catch((e) => setError(String(e)));
     return subscribeJobs((next) => {
@@ -504,6 +536,7 @@ export default function App() {
   }, [canShowTable]);
   useEffect(() => {
     function key(e: KeyboardEvent) {
+      if (!environmentReady) return;
       if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key === ",") {
         e.preventDefault();
         setShortcutsOpen(false);
@@ -525,22 +558,26 @@ export default function App() {
     }
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [help, disabled, refresh]);
+  }, [help, disabled, refresh, environmentReady]);
   // Native macOS menu items (RallyCut > 设置… ⌘, / 帮助 > 快捷键 ⌘/).
   useEffect(() => {
     const offs = [
       subscribeMenu("settings", () => {
+        if (!environmentReady) return;
         setShortcutsOpen(false);
         setSettingsOpen(true);
       }),
       subscribeMenu("shortcuts", () => {
+        if (!environmentReady) return;
         setSettingsOpen(false);
         setShortcutsOpen(true);
       }),
-      subscribeMenu("help", () => setHelp(true)),
+      subscribeMenu("help", () => {
+        if (environmentReady) setHelp(true);
+      }),
     ];
     return () => offs.forEach((off) => off());
-  }, []);
+  }, [environmentReady]);
 
   function askConfirmation(
     message: string,
@@ -560,6 +597,7 @@ export default function App() {
   }
   // Returns true on success, false on failure (the error is shown).
   async function run(action: () => Promise<unknown>): Promise<boolean> {
+    if (!environmentReady) return false;
     setPending(true);
     setError("");
     try {
@@ -592,6 +630,7 @@ export default function App() {
   }
   useEffect(() => {
     if (
+      !environmentReady ||
       !p ||
       p.rallies.length !== 0 ||
       p.raw_rallies.length === 0 ||
@@ -604,7 +643,7 @@ export default function App() {
     if (autoAdoptAttempt.current === key) return;
     autoAdoptAttempt.current = key;
     void run(() => api().UseAnalysisCandidates());
-  }, [p, pending, running]);
+  }, [p, pending, running, environmentReady]);
   async function update(rs: Rally[], rules = p?.rules ?? defaultRules) {
     await save(() => api().UpdateTimeline(rs, rules));
   }
@@ -1088,6 +1127,7 @@ export default function App() {
   const [markHint, setMarkHint] = useState("");
   const shortcutHandler = useRef<(event: KeyboardEvent) => void>(() => {});
   shortcutHandler.current = (event: KeyboardEvent) => {
+    if (!environmentReady) return;
     const target = event.target as HTMLElement | null;
     if (target && isTypingTarget(target)) return;
     // The progress bar owns arrows / Home / End while focused.
@@ -1332,19 +1372,24 @@ export default function App() {
   }
 
   const setup = state.setup;
-  if (!loaded || (setup && setup.state !== "ready")) {
+  if (!loaded || !environmentReady) {
     return (
       <SetupScreen
         state={
           setup ?? {
-            state: "running",
-            step: "python",
-            message: "正在检查运行环境…",
+            state: loaded ? "failed" : "checking",
+            step: "check",
+            message: loaded ? "无法获取环境检测结果" : "正在检查运行环境…",
             detail: "",
             progress: 0,
+            error: loaded
+              ? "没有收到有效的环境状态，请重新检测或重启应用。"
+              : undefined,
           }
         }
-        onRetry={() => void retrySetup()}
+        busy={setupRetrying}
+        onStart={() => void retrySetup()}
+        onRecheck={() => void retrySetup(true)}
       />
     );
   }

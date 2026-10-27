@@ -214,7 +214,11 @@ export interface Project {
   job?: Job;
 }
 export interface SetupState {
-  state: "required" | "running" | "ready" | "failed";
+  revision?: number;
+  state: "checking" | "required" | "running" | "ready" | "failed";
+  platform?: string;
+  checks?: { id: string; label: string; ready: boolean }[];
+  indeterminate?: boolean;
   step: string;
   message: string;
   detail: string;

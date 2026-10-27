@@ -11,6 +11,7 @@ Go + Wails v2 桌面宿主、React / TypeScript 界面、Python JSON Lines 分�
 - `backend/export`：FFmpeg 编码、逐帧轨迹与编号叠加、不覆盖输出、取消和结果核验。
 - `frontend/src/lib/shortcuts.ts`：快捷键表与说明的单一来源。
 - `backend/menu.go`：原生菜单与界面事件。
+- `backend/setup`：用户确认后准备平台运行环境，首次启动门禁与进度；见[首次环境准备](first-run-setup.md)。
 - `vision/neural_analysis.py`：分析管线与共享 TrackingStage。
 
 完整结构见[架构](architecture.md)、[协议](protocol.md)和仓库 `AGENTS.md`。
@@ -47,7 +48,7 @@ just run
 
 `wails dev` 会覆盖 `build/bin`。不要从该路径拿开发包发布，也不要与同一工作树的生产打包并行。当前有开发实例时在 CI 或独立工作树打包，不要杀用户的开发进程。
 
-浏览器回归见 `tests/ui/test_workbench.py`，原生检查见 `tests/desktop/`。前者使用内存 Wails fixture，不能冒充真实文件桥接或模型验收。私有素材测试需显式开启，普通 CI 不依赖私有视频、权重、项目或 `/tmp` 既有产物。
+浏览器回归见 `tests/ui/test_setup.py`（首次确认、进度、门禁、重试与乱序事件）和 `tests/ui/test_workbench.py`（工作台），原生检查见 `tests/desktop/`。前者使用内存 Wails fixture，不能冒充真实文件桥接或模型验收。私有素材测试需显式开启，普通 CI 不依赖私有视频、权重、项目或 `/tmp` 既有产物。
 
 ## 编辑与导出语义
 

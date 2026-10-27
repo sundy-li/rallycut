@@ -10,12 +10,16 @@ import (
 
 	"rallycut/backend/analysis"
 	"rallycut/backend/project"
+	setupenv "rallycut/backend/setup"
 )
 
 func newTestApp(t *testing.T, p *project.Project) (*App, string) {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "match-rallycut.json")
+	readySetup := setupenv.New(setupenv.Options{DataDir: filepath.Dir(path)})
+	readySetup.MarkReady("test-python")
 	return &App{
+		setup:       readySetup,
 		ctx:         context.Background(),
 		dataDir:     filepath.Dir(path),
 		worker:      "test-worker",
