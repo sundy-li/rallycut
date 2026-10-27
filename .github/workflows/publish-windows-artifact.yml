@@ -1,0 +1,77 @@
+name: Publish verified Windows preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Successful Windows preview run ID'
+        required: true
+        type: string
+      version:
+        description: 'Matching prerelease version without v'
+        required: true
+        default: '0.1.0-alpha.3-windows.2'
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      SOURCE_RUN: ${{ inputs.run_id }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require successful original Windows build
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,os,re,subprocess
+          run_id=os.environ['SOURCE_RUN'];version=os.environ['VERSION']
+          assert re.fullmatch(r'\d+',run_id)
+          assert re.fullmatch(r'\d+\.\d+\.\d+-[A-Za-z0-9.-]+',version)
+          run=json.loads(subprocess.check_output(['gh','run','view',run_id,'--json','conclusion,headSha,workflowName,headBranch']))
+          assert run['conclusion']=='success' and run['workflowName']=='Windows preview' and run['headBranch']=='main',run
+          assert re.fullmatch(r'[0-9a-f]{40}',run['headSha'])
+          with open(os.environ['GITHUB_ENV'],'a') as f:f.write('SOURCE_SHA='+run['headSha']+'\n')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.run_id }}
+          name: windows-preview-${{ inputs.version }}
+          path: dist
+      - name: Recheck every deliverable checksum
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          root=Path('dist');version=os.environ['VERSION']
+          expected={f'RallyCut-{version}-windows-amd64.exe',f'RallyCut-{version}-windows-amd64-setup.exe','RallyCut-runtime-windows-amd64.zip','runtime-bundle.json','SHA256SUMS-windows.txt'}
+          assert {p.name for p in root.iterdir()}==expected
+          def sha(p):
+              h=hashlib.sha256()
+              with p.open('rb') as f:
+                  for b in iter(lambda:f.read(1024*1024),b''):h.update(b)
+              return h.hexdigest()
+          rows=(root/'SHA256SUMS-windows.txt').read_text(encoding='utf-8-sig').splitlines()
+          assert len(rows)==4
+          for row in rows:
+              digest,name=row.split(maxsplit=1);assert name in expected
+              assert sha(root/name)==digest,name
+              print('Verified',name,(root/name).stat().st_size)
+          spec=json.loads((root/'runtime-bundle.json').read_text())['platforms']['windows/amd64']
+          assert spec['id']=='windows-x64-'+version
+          assert sha(root/spec['filename'])==spec['sha256']
+          PY
+      - name: Publish prerelease against original tested commit
+        shell: bash
+        run: |
+          gh release create "v$VERSION" --target "$SOURCE_SHA" --prerelease --title "Windows 预制环境测试版 · v$VERSION" --notes-file docs/windows-preview.zh-CN.md dist/*
