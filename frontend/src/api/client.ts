@@ -47,6 +47,8 @@ declare global {
     go?: { backend: { App: Backend } };
     runtime?: {
       EventsOn<T>(name: string, cb: (payload: T) => void): () => void;
+      /** Quits the desktop app; provided by the Wails runtime. */
+      Quit?(): void;
     };
   }
 }
@@ -79,4 +81,14 @@ export function subscribeMenu(
   cb: () => void,
 ): () => void {
   return window.runtime?.EventsOn(`menu:${name}`, cb) ?? (() => {});
+}
+
+/**
+ * Quit the desktop app.
+ *
+ * Windows has no native menu bar, so the window chrome plus this in-app button
+ * are the only exit affordances there.
+ */
+export function quitApp(): void {
+  window.runtime?.Quit?.();
 }

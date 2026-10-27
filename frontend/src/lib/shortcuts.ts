@@ -119,7 +119,10 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
     note: "点中进度条后生效",
     rows: [
       { keys: ["←", "→"], label: "后退 / 前进 1 秒" },
-      { keys: ["⇧←", "⇧→"], label: "后退 / 前进 5 秒" },
+      {
+        keys: isMac ? ["⇧←", "⇧→"] : ["Shift+←", "Shift+→"],
+        label: "后退 / 前进 5 秒",
+      },
       { keys: ["Home", "End"], label: "跳到开头 / 结尾" },
     ],
   },

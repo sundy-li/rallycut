@@ -1,5 +1,10 @@
 import type { AnalysisSummary, ProcessingPerformance } from "../api/types";
-import { fpsText, summaryRates } from "../performance";
+import {
+  estimateRemainingSeconds,
+  fpsText,
+  remainingText,
+  summaryRates,
+} from "../performance";
 
 const processingHelp =
   "真实完成帧数 ÷ 实际耗时；包含解码、预处理、推理、后处理。不是素材帧率，也不是纯 GPU FPS。";
@@ -8,11 +13,27 @@ export function LiveProcessingStats({
   stats,
   active,
   elapsed,
+  duration,
+  progress,
 }: {
   stats: ProcessingPerformance;
   active: boolean;
+  /** Job wall clock, including preparation. */
   elapsed?: number;
+  /** Source duration in seconds; only used to estimate the remaining time. */
+  duration?: number;
+  /** Job progress 0-1 (timestamp/duration*0.94). */
+  progress?: number;
 }) {
+  // The first sample arrives right after model loading with a single scored
+  // frame, so it reads as "0.1 FPS" and looks like a hang. Wait for a real
+  // sample before showing rates and an ETA.
+  const warming =
+    active && (stats.processed_frames < 20 || stats.elapsed_seconds < 5);
+  const remaining =
+    active && !warming
+      ? estimateRemainingSeconds(elapsed, progress, duration)
+      : undefined;
   return (
     <div
       className="processing-stats live-processing"
@@ -26,18 +47,27 @@ export function LiveProcessingStats({
             ? "画面处理完成"
             : "画面处理"}
       </span>
-      {active && stats.stage === "inference" && (
+      {active && stats.stage === "inference" && !warming && (
         <span>
           最近 <strong>{fpsText(stats.recent_fps)}</strong>
         </span>
       )}
       <span>
-        平均 <strong>{fpsText(stats.average_fps)}</strong>
+        平均{" "}
+        <strong>{warming ? "统计中…" : fpsText(stats.average_fps)}</strong>
       </span>
       {elapsed !== undefined && elapsed > 0 && Number.isFinite(elapsed) && (
         <span title="任务启动后的完成帧数 ÷ 墙钟耗时，包含指纹校验、音轨提取、模型加载和校准。">
-          任务均速 <strong>{fpsText(stats.processed_frames / elapsed)}</strong>{" "}
+          任务均速{" "}
+          <strong>
+            {warming ? "统计中…" : fpsText(stats.processed_frames / elapsed)}
+          </strong>{" "}
           · {elapsed.toFixed(1)}s
+        </span>
+      )}
+      {remaining !== undefined && (
+        <span title="按当前速度线性外推，包含准备阶段；只用于判断还要等多久。">
+          预计还需 <strong>{remainingText(remaining)}</strong>
         </span>
       )}
       <span className="processing-count">

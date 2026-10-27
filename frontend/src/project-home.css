@@ -39,6 +39,12 @@
   letter-spacing: 0.35px;
 }
 
+.project-home-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .project-home-shield {
   width: 16px;
   height: 16px;

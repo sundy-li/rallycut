@@ -276,6 +276,11 @@ kbd,
   color: #e8f5db;
   background: #ffffff09;
 }
+/* Quit is destructive while a job runs, so it never gets the accent hover. */
+.quit-button:hover:not(:disabled) {
+  color: #efa48d;
+  background: #ffffff09;
+}
 .side-rail {
   position: fixed;
   left: 0;

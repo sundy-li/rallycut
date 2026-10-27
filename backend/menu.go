@@ -15,14 +15,14 @@ const (
 	MenuEventHelp      = "menu:help"
 )
 
-// ApplicationMenu builds the native macOS menu bar; other platforms get nil
-// (no window menu bar). The first submenu becomes the macOS app menu, which
-// holds "设置… ⌘," per platform convention.
+// ApplicationMenu builds the native macOS menu bar. Other platforms return nil:
+// a Win32 menu bar renders in system colours and does not fit the dark UI, so
+// Windows uses the window frame plus the in-app quit button instead
+// (frontend/src/App.tsx requestQuit).
 //
 // There is deliberately no Edit menu: its Undo / Redo items would claim ⌘Z /
 // ⇧⌘Z for the WebView's text undo, while the app's project undo is handled in
-// the frontend keydown handler. Without a menu Wails installs no Edit menu
-// either, so this keeps the previous keyboard behaviour.
+// the frontend keydown handler.
 func ApplicationMenu(a *App) *menu.Menu {
 	if runtime.GOOS != "darwin" {
 		return nil
@@ -30,21 +30,25 @@ func ApplicationMenu(a *App) *menu.Menu {
 	return buildApplicationMenu(a)
 }
 
+func emitEvent(a *App, name string) menu.Callback {
+	return func(*menu.CallbackData) {
+		if a.ctx != nil {
+			wruntime.EventsEmit(a.ctx, name)
+		}
+	}
+}
+
+func withContext(a *App, f func()) menu.Callback {
+	return func(*menu.CallbackData) {
+		if a.ctx != nil {
+			f()
+		}
+	}
+}
+
 func buildApplicationMenu(a *App) *menu.Menu {
-	emit := func(name string) menu.Callback {
-		return func(*menu.CallbackData) {
-			if a.ctx != nil {
-				wruntime.EventsEmit(a.ctx, name)
-			}
-		}
-	}
-	withCtx := func(f func()) menu.Callback {
-		return func(*menu.CallbackData) {
-			if a.ctx != nil {
-				f()
-			}
-		}
-	}
+	emit := func(name string) menu.Callback { return emitEvent(a, name) }
+	withCtx := func(f func()) menu.Callback { return withContext(a, f) }
 	root := menu.NewMenu()
 
 	app := root.AddSubmenu("RallyCut")

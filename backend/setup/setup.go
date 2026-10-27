@@ -107,11 +107,12 @@ func (p *Provisioner) snapshotLocked() State {
 	p.revision++
 	p.state.Revision = p.revision
 	p.state.RuntimeMode = "legacy"
-	if p.bundleSpec() != nil {
+	// The installed runtime directory is what users actually run; a local build
+	// without a pinned bundle catalog should still describe it as installed.
+	if p.expandedRoot() != "" {
+		p.state.RuntimeMode = "installed"
+	} else if p.bundleSpec() != nil {
 		p.state.RuntimeMode = "bundle"
-		if p.expandedRoot() != "" {
-			p.state.RuntimeMode = "installed"
-		}
 	}
 	state := p.state
 	state.Checks = append([]CheckItem(nil), state.Checks...)

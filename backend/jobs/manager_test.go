@@ -4,9 +4,20 @@ import (
 	"context"
 	"errors"
 	"rallycut/backend/project"
+	"strings"
 	"sync"
 	"testing"
 )
+
+func TestFailureMessageExplainsTimeouts(t *testing.T) {
+	timeout := failureMessage(context.DeadlineExceeded)
+	if strings.Contains(timeout, "context deadline") || !strings.Contains(timeout, "超时") {
+		t.Fatalf("timeout must be user-facing Chinese, got %q", timeout)
+	}
+	if got := failureMessage(errors.New("disk full")); got != "disk full" {
+		t.Fatalf("unknown errors must pass through unchanged, got %q", got)
+	}
+}
 
 func TestSingleFlightCancellationAndRetry(t *testing.T) {
 	var m Manager

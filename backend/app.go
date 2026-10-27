@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"sync"
 	"time"
@@ -61,6 +62,7 @@ func NewApp() *App { return &App{log: slog.Default()} }
 
 func (a *App) Startup(ctx context.Context) {
 	a.ctx, a.cancel = context.WithCancel(ctx)
+	fitWindowToScreen(a.ctx)
 	dir, err := os.UserConfigDir()
 	if err != nil {
 		a.initError = err.Error()
@@ -132,6 +134,16 @@ func (a *App) Startup(ctx context.Context) {
 	// A successful, unchanged runtime takes the local-only fast path before the
 	// frontend can see a setup screen. Never launch helpers or install on a hit.
 	a.setup.Boot(a.ctx)
+}
+
+// FocusWindow brings the running window forward when a second copy of the app
+// is launched (see the SingleInstanceLock callback in main.go).
+func (a *App) FocusWindow() {
+	if a.ctx == nil {
+		return
+	}
+	wruntime.WindowUnminimise(a.ctx)
+	wruntime.WindowShow(a.ctx)
 }
 
 func (a *App) Shutdown(context.Context) {
@@ -823,7 +835,17 @@ func (a *App) startAnalysis(useCache bool) (project.Job, error) {
 		return project.Job{}, fmt.Errorf("请先导入视频")
 	}
 	return a.manager.Start(a.ctx, "analysis", a.notify, func(ctx context.Context, progress func(float64, string)) (string, error) {
-		ctx, cancel := context.WithTimeout(ctx, 30*time.Minute)
+		// Apple silicon runs this pipeline far faster than realtime, so 30
+		// minutes is a generous hang guard there. Windows CPU runs (and x64
+		// programs inside a Windows-on-ARM VM) are an order of magnitude
+		// slower: a 5 minute clip needs almost an hour, and the job used to
+		// die at 30 minutes with "context deadline exceeded". Keep the
+		// explicit cancel button as the real bound on those builds.
+		budget := 30 * time.Minute
+		if runtime.GOOS == "windows" {
+			budget = 6 * time.Hour
+		}
+		ctx, cancel := context.WithTimeout(ctx, budget)
 		defer cancel()
 		progress(.01, "校验原视频与分析缓存")
 		hash, err := media.Fingerprint(ctx, p.Video.Path)

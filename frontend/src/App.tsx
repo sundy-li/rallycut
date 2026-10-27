@@ -29,6 +29,7 @@ import {
   Pause,
   Play,
   Plus,
+  Power,
   RefreshCw,
   RotateCcw,
   Save,
@@ -46,6 +47,7 @@ import {
 import {
   api,
   isDesktop,
+  quitApp,
   subscribeJobs,
   subscribeMenu,
   subscribeSetup,
@@ -594,6 +596,18 @@ export default function App() {
     confirmResolve.current = null;
     setAppConfirm(null);
     resolve?.(ok);
+  }
+  // Windows builds have no native menu bar, so quitting lives in the UI. Do
+  // not silently throw away a running analysis or export.
+  async function requestQuit() {
+    if (running) {
+      const ok = await askConfirmation(
+        "分析或导出仍在进行，退出会中断当前任务。确定退出 RallyCut？",
+        "退出",
+      );
+      if (!ok) return;
+    }
+    quitApp();
   }
   // Returns true on success, false on failure (the error is shown).
   async function run(action: () => Promise<unknown>): Promise<boolean> {
@@ -1385,12 +1399,18 @@ export default function App() {
 
   // Do not flash a first-run/setup UI while the initial RPC is in flight. A
   // cached backend startup returns ready without ever entering setup state.
-  if (!loaded || state.setup?.state === "opening") {
+  // Installed machines that do have to verify (first launch after an update)
+  // stay on the splash too: the setup screen is for environments that need a
+  // user decision, not for a routine self-check.
+  const verifyingInstalled =
+    state.setup?.state === "checking" &&
+    state.setup?.runtime_mode === "installed";
+  if (!loaded || state.setup?.state === "opening" || verifyingInstalled) {
     return (
       <main className="app-opening" aria-busy="true">
         <div role="status">
           <strong>rallycut</strong>
-          <span>正在打开…</span>
+          <span>{verifyingInstalled ? "正在检查运行环境…" : "正在打开…"}</span>
         </div>
       </main>
     );
@@ -1438,6 +1458,7 @@ export default function App() {
             setProjectListError("");
           }}
           onRequestDelete={setPendingDelete}
+          onQuit={() => void requestQuit()}
         />
         {newProjectOpen && (
           <div
@@ -1690,6 +1711,16 @@ export default function App() {
           >
             <CircleHelp size={17} />
           </button>
+          {isDesktop() && (
+            <button
+              className="icon-button quit-button"
+              title="退出 RallyCut"
+              aria-label="退出 RallyCut"
+              onClick={() => void requestQuit()}
+            >
+              <Power size={16} />
+            </button>
+          )}
         </div>
       </header>
 
@@ -2674,6 +2705,8 @@ export default function App() {
                   stats={job.performance}
                   active={Boolean(running)}
                   elapsed={job.elapsed_seconds}
+                  duration={p?.video?.duration}
+                  progress={job.progress}
                 />
                 <p className="processing-note">
                   画面 FPS

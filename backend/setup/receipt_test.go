@@ -142,3 +142,29 @@ func TestLightweightSnapshotTracksPinnedExecutableChanges(t *testing.T) {
 		t.Fatal("bad fixture")
 	}
 }
+
+// Local/dev builds embed an empty bundle catalog. They still run next to the
+// installed runtime and must not re-run the Python/model probes on every launch.
+func TestLocalBuildWithoutBundleCatalogStillCachesReadiness(t *testing.T) {
+	events := make(chan State, 16)
+	root := t.TempDir()
+	p := New(Options{DataDir: t.TempDir(), InstalledRoot: root, Emit: func(s State) { events <- s }})
+	python := filepath.Join(root, "python", "python.exe")
+	snapshot := readyReceipt{Schema: readyReceiptSchema, Identity: "local-runtime", Files: map[string]fileStamp{"python": {Bytes: 1, Modified: 1}}}
+	p.snapshot = func(path string) (readyReceipt, error) {
+		if path != python {
+			t.Fatalf("wrong interpreter: %s", path)
+		}
+		return snapshot, nil
+	}
+	p.saveReadiness(python)
+	p.inspect = func(context.Context) (string, []CheckItem) {
+		t.Fatal("cached boot launched full probes")
+		return "", nil
+	}
+	p.Boot(context.Background())
+	state := p.Status()
+	if state.State != "ready" || state.RuntimeMode != "installed" || state.Python != python {
+		t.Fatalf("local build did not reuse readiness: %+v", state)
+	}
+}

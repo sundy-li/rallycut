@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"rallycut/backend/project"
 	"sync"
@@ -67,7 +68,7 @@ func (m *Manager) Start(parent context.Context, kind string, notify Notify, work
 			next.Message = "任务已取消"
 		} else if err != nil {
 			next.Status = "failed"
-			next.Message = err.Error()
+			next.Message = failureMessage(err)
 		} else {
 			next.Status = "completed"
 			next.Progress = 1
@@ -147,4 +148,16 @@ func (m *Manager) Wait() {
 	if done != nil {
 		<-done
 	}
+}
+
+// failureMessage keeps Go's terse context errors out of the Chinese UI: a raw
+// "context deadline exceeded" told users nothing about what to do next.
+func failureMessage(err error) string {
+	switch {
+	case errors.Is(err, context.DeadlineExceeded):
+		return "分析超时：这段视频在当前电脑上耗时过长。可改用更短的片段重试，或在高性能机器上分析后复制项目文件过来。"
+	case errors.Is(err, context.Canceled):
+		return "任务已取消"
+	}
+	return err.Error()
 }

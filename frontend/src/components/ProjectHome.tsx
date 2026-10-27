@@ -7,6 +7,7 @@ import {
   HardDrive,
   Layers2,
   Plus,
+  Power,
   RefreshCw,
   ShieldCheck,
   Trash2,
@@ -26,6 +27,8 @@ interface ProjectHomeProps {
   onRefresh: () => void;
   onDismissError: () => void;
   onRequestDelete: (project: RecentProject) => void;
+  /** Quit the desktop app; omitted in the browser preview. */
+  onQuit?: () => void;
 }
 
 function durationLabel(seconds: number) {
@@ -51,10 +54,13 @@ function openedLabel(value: string) {
   }).format(date);
 }
 
+// Keep the platform's own separator: a Windows project path rendered with
+// forward slashes looks like a different (unreachable) location.
 function folderLabel(path: string) {
-  const parts = path.replace(/\\/g, "/").split("/");
+  const separator = path.includes("\\") ? "\\" : "/";
+  const parts = path.split(separator);
   parts.pop();
-  return parts.join("/") || path;
+  return parts.join(separator) || path;
 }
 
 export default function ProjectHome({
@@ -69,6 +75,7 @@ export default function ProjectHome({
   onRefresh,
   onDismissError,
   onRequestDelete,
+  onQuit,
 }: ProjectHomeProps) {
   const rows = Array.isArray(projects) ? projects : [];
   return (
@@ -84,10 +91,22 @@ export default function ProjectHome({
             rallycut<span> / </span>
           </strong>
         </div>
-        <span className="project-home-local">
-          <ShieldCheck size={15} />
-          本地项目库
-        </span>
+        <div className="project-home-header-actions">
+          <span className="project-home-local">
+            <ShieldCheck size={15} />
+            本地项目库
+          </span>
+          {desktop && onQuit && (
+            <button
+              className="icon-button quit-button"
+              title="退出 RallyCut"
+              aria-label="退出 RallyCut"
+              onClick={onQuit}
+            >
+              <Power size={16} />
+            </button>
+          )}
+        </div>
       </header>
 
       <main className="project-home-main">

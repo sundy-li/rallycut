@@ -50,16 +50,20 @@ func (p *Provisioner) invalidateReceipt() {
 // package import or model forward. This is a startup cache, not a defense against
 // an attacker who can change both the user's receipt and installation files.
 func (p *Provisioner) readinessSnapshot(python string) (readyReceipt, error) {
+	// A pinned bundle spec is the release contract, but local/dev builds embed an
+	// empty catalog and run next to an already installed runtime. They still get
+	// the startup cache: the receipt is keyed by interpreter, runtime manifest,
+	// worker digest, model manifest and the stamps of loader-critical files.
 	spec := p.bundleSpec()
-	if spec == nil {
-		return readyReceipt{}, fmt.Errorf("no pinned runtime")
-	}
 	root := p.expandedRoot()
 	if root == "" {
 		root = runtimeenv.Active(p.options.DataDir)
 	}
+	if root == "" {
+		return readyReceipt{}, fmt.Errorf("no installed runtime")
+	}
 	expected := filepath.Join(root, "python", "python.exe")
-	if root == "" || receiptPathKey(python) != receiptPathKey(expected) {
+	if receiptPathKey(python) != receiptPathKey(expected) {
 		return readyReceipt{}, fmt.Errorf("runtime interpreter changed")
 	}
 	manifestPath := filepath.Join(root, "bundle-manifest.json")
@@ -68,7 +72,7 @@ func (p *Provisioner) readinessSnapshot(python string) (readyReceipt, error) {
 		return readyReceipt{}, fmt.Errorf("runtime manifest missing or oversized")
 	}
 	digest, err := fileSHA256(manifestPath)
-	if err != nil || digest != spec.ManifestSHA256 {
+	if err != nil || (spec != nil && digest != spec.ManifestSHA256) {
 		return readyReceipt{}, fmt.Errorf("runtime manifest changed")
 	}
 	data, err := os.ReadFile(manifestPath)
@@ -76,7 +80,8 @@ func (p *Provisioner) readinessSnapshot(python string) (readyReceipt, error) {
 		return readyReceipt{}, err
 	}
 	var manifest bundleManifest
-	if json.Unmarshal(data, &manifest) != nil || manifest.ID != spec.ID || manifest.Platform != "windows/amd64" || len(manifest.Files) == 0 {
+	if json.Unmarshal(data, &manifest) != nil || manifest.Platform != "windows/amd64" || len(manifest.Files) == 0 ||
+		(spec != nil && manifest.ID != spec.ID) {
 		return readyReceipt{}, fmt.Errorf("runtime identity changed")
 	}
 	weights, err := defaultWeights()
@@ -88,10 +93,10 @@ func (p *Provisioner) readinessSnapshot(python string) (readyReceipt, error) {
 		return readyReceipt{}, fmt.Errorf("model missing or changed")
 	}
 	identityData, _ := json.Marshal(struct {
-		OS, Arch, Root, Python, Worker, WorkerDigest, ModelManifest string
-		Spec                                                        BundleSpec
-		Overrides                                                   map[string]string
-	}{runtime.GOOS, runtime.GOARCH, receiptPathKey(root), receiptPathKey(python), receiptPathKey(p.options.Worker), vision.Digest(), string(models.Manifest), *spec, map[string]string{
+		OS, Arch, Root, Python, Worker, WorkerDigest, ModelManifest, RuntimeManifest string
+		Spec                                                                         *BundleSpec
+		Overrides                                                                    map[string]string
+	}{runtime.GOOS, runtime.GOARCH, receiptPathKey(root), receiptPathKey(python), receiptPathKey(p.options.Worker), vision.Digest(), string(models.Manifest), digest, spec, map[string]string{
 		"python": os.Getenv("RALLYCUT_PYTHON3"), "ffmpeg": os.Getenv("RALLYCUT_FFMPEG"), "ffprobe": os.Getenv("RALLYCUT_FFPROBE"), "model": os.Getenv("RALLYCUT_MODEL_PATH"), "onnx": os.Getenv("RALLYCUT_ONNX_MODEL"), "coreml": os.Getenv("RALLYCUT_COREML_MODEL"),
 	}})
 	result := readyReceipt{Schema: readyReceiptSchema, Identity: string(identityData), Files: map[string]fileStamp{}}
@@ -159,7 +164,7 @@ func (p *Provisioner) readinessSnapshot(python string) (readyReceipt, error) {
 	return result, nil
 }
 func (p *Provisioner) saveReadiness(python string) {
-	if p.bundleSpec() == nil {
+	if p.expandedRoot() == "" && runtimeenv.Active(p.options.DataDir) == "" {
 		return
 	}
 	snapshot, err := p.snapshot(python)
@@ -171,9 +176,6 @@ func (p *Provisioner) saveReadiness(python string) {
 	}
 }
 func (p *Provisioner) cachedReadiness() (string, bool) {
-	if p.bundleSpec() == nil {
-		return "", false
-	}
 	var previous readyReceipt
 	if err := storage.ReadJSON(p.receiptPath(), &previous); err != nil || previous.Schema != readyReceiptSchema {
 		return "", false

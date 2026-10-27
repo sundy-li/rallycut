@@ -10,7 +10,7 @@ Go + Wails v2 桌面宿主、React / TypeScript 界面、Python JSON Lines 分�
 - `backend/timeline`：剪辑缓冲、重叠优先级、输出片段与回合编号。
 - `backend/export`：FFmpeg 编码、逐帧轨迹与编号叠加、不覆盖输出、取消和结果核验。
 - `frontend/src/lib/shortcuts.ts`：快捷键表与说明的单一来源。
-- `backend/menu.go`：原生菜单与界面事件。
+- `backend/menu.go`：原生菜单与界面事件。菜单只在 macOS 构建；Windows 没有原生菜单，退出入口是界面右上角的电源按钮（`App.tsx` `requestQuit`），窗口过小或过大时由 `backend/window.go` 缩放到屏幕内。
 - `backend/setup`：用户确认后准备平台运行环境，首次启动门禁与进度；见[首次环境准备](first-run-setup.md)。
 - `vision/neural_analysis.py`：分析管线与共享 TrackingStage。
 

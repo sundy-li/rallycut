@@ -6,5 +6,12 @@
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
-  "author": {"name": "RallyCut"}
+  "author": {"name": "RallyCut"},
+  "info": {
+    "companyName": "RallyCut",
+    "productName": "RallyCut",
+    "productVersion": "0.1.0-alpha.3",
+    "copyright": "Copyright © 2026 RallyCut",
+    "comments": "本地乒乓球比赛集锦剪辑，全部处理都在本机完成。"
+  }
 }

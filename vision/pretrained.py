@@ -71,7 +71,10 @@ class BlurBallDetector:
             raise ValueError('MPS unavailable')
         if precision=='fp16' and device=='cpu':
             raise ValueError('FP16 requires MPS; use fp32 on CPU')
-        torch.set_num_threads(2)
+        # Leave cores for the decode and postprocess threads but do not pin
+        # inference to 2 threads: CPU-only hosts (including x64 builds inside a
+        # Windows-on-ARM VM) gain from the remaining cores.
+        torch.set_num_threads(max(2, min(4, os.cpu_count() or 2)))
         cfg = Config(json.loads((Path(__file__).parent/'vendor/blurball/config.json').read_text()))
         self.model = BlurBall(cfg)
         checkpoint = torch.load(path, map_location='cpu', weights_only=True)
