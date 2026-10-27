@@ -174,7 +174,10 @@ func Run(ctx context.Context, p *project.Project, output string, progress func(f
 	}
 	progress(.9, "合并片段并校验媒体轨道")
 	result := filepath.Join(dir, "highlights.mp4")
-	if err := run(ctx, "-hide_banner", "-loglevel", "error", "-nostdin", "-y", "-f", "concat", "-safe", "1", "-i", filepath.Join(dir, "concat.txt"), "-c", "copy", "-movflags", "+faststart", result); err != nil {
+	// Concat resolves entries as URLs; an absolute Windows path containing '#'
+	// can be mistaken for a fragment. Keep its list/input/output names relative
+	// to a real Unicode working directory instead of escaping user paths as URLs.
+	if err := runWithInputDir(ctx, dir, nil, "-hide_banner", "-loglevel", "error", "-nostdin", "-y", "-f", "concat", "-safe", "1", "-i", "concat.txt", "-c", "copy", "-movflags", "+faststart", "highlights.mp4"); err != nil {
 		return err
 	}
 	v, err := media.Probe(ctx, result)
@@ -194,7 +197,7 @@ func Run(ctx context.Context, p *project.Project, output string, progress func(f
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if err := os.Link(result, output); err != nil {
+	if err := publishCompleted(result, output); err != nil {
 		return fmt.Errorf("保存导出文件失败（目标可能已存在）: %w", err)
 	}
 	progress(1, "MP4 已导出；请回放确认音画同步")
@@ -279,7 +282,11 @@ func run(ctx context.Context, args ...string) error {
 // reading early once -t is reached; that broken pipe is not an error when
 // FFmpeg itself succeeds.
 func runWithInput(ctx context.Context, feed func(io.Writer) error, args ...string) error {
+	return runWithInputDir(ctx, "", feed, args...)
+}
+func runWithInputDir(ctx context.Context, dir string, feed func(io.Writer) error, args ...string) error {
 	cmd := childproc.CommandContext(ctx, media.Binary("ffmpeg"), args...)
+	cmd.Dir = dir
 	// FFmpeg errors are normally short at loglevel=error; spool to a file to bound RAM.
 	log, err := os.CreateTemp("", "rallycut-ffmpeg-*.log")
 	if err != nil {

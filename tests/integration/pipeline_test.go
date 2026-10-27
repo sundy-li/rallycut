@@ -95,8 +95,11 @@ func TestSilentVideoExport(t *testing.T) {
 	if _, err := exec.LookPath(media.Binary("ffmpeg")); err != nil {
 		t.Skip("ffmpeg unavailable")
 	}
-	dir := t.TempDir()
-	source := filepath.Join(dir, "silent.mp4")
+	dir := filepath.Join(t.TempDir(), "中文 空格 #100% & 视频")
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	source := filepath.Join(dir, "静音 对拉 🏓.mp4")
 	cmd := exec.Command(media.Binary("ffmpeg"), "-v", "error", "-f", "lavfi", "-i", "color=c=green:s=160x90:r=24:d=2", "-c:v", "libx264", source)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("fixture: %s %v", out, err)
