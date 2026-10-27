@@ -68,14 +68,15 @@ type Options struct {
 type Provisioner struct {
 	options Options
 
-	mu       sync.Mutex
-	state    State
-	running  bool
-	revision uint64
-	wg       sync.WaitGroup
-	run      func(context.Context) (string, error)
-	inspect  func(context.Context) (string, []CheckItem)
-	snapshot func(string) (readyReceipt, error)
+	mu               sync.Mutex
+	state            State
+	running          bool
+	revision         uint64
+	wg               sync.WaitGroup
+	run              func(context.Context) (string, error)
+	inspect          func(context.Context) (string, []CheckItem)
+	snapshot         func(string) (readyReceipt, error)
+	noEmbeddedBundle bool // Tests exercise local builds even in pinned release CI.
 }
 
 func New(options Options) *Provisioner {
@@ -145,14 +146,14 @@ func (p *Provisioner) inspectRuntime(ctx context.Context) (string, []CheckItem) 
 		{ID: "packages", Label: "视觉分析依赖"},
 		{ID: "model", Label: "视觉模型"},
 	}
-	if spec := p.bundleSpec(); spec != nil {
+	if spec := p.bundleSpec(); spec != nil || root != "" {
 		if root == "" {
 			root = runtimeenv.Active(p.options.DataDir)
 		}
 		if root == "" {
 			checks[0].Ready = false
 			checks[0].Detail = "需要准备本版预制环境"
-		} else if err := verifyBundleFiles(ctx, root, *spec); err != nil {
+		} else if err := verifyInstalledFiles(ctx, root, spec); err != nil {
 			checks[0].Ready = false
 			checks[0].Detail = err.Error()
 		}
@@ -176,7 +177,7 @@ func (p *Provisioner) inspectRuntime(ctx context.Context) (string, []CheckItem) 
 	}
 	// Preserve explicit developer/repository model discovery for non-bundled
 	// checkouts; installed releases use their own model files and strict pin.
-	if p.bundleSpec() == nil && runtimeChecksReady(checks) && !checks[3].Ready && ctx.Err() == nil {
+	if p.bundleSpec() == nil && root == "" && runtimeChecksReady(checks) && !checks[3].Ready && ctx.Err() == nil {
 		verify.Ready, verify.Detail = analysis.ModelDetailContext(ctx, python, p.options.Worker, p.options.DataDir)
 		if verify.Ready {
 			checks[3].Ready = true
@@ -324,6 +325,14 @@ func (p *Provisioner) Start(parent context.Context) {
 }
 
 func (p *Provisioner) provision(ctx context.Context) (string, error) {
+	// Local builds may deliberately reuse an expanded installed environment
+	// without embedding an archive catalog. Never fall through to venv/pip.
+	if root := p.expandedRoot(); root != "" {
+		if err := p.verifyRuntime(ctx, root, p.bundleSpec()); err != nil {
+			return "", err
+		}
+		return filepath.Join(root, "python", "python.exe"), nil
+	}
 	if spec := p.bundleSpec(); spec != nil {
 		return p.provisionBundle(ctx, *spec)
 	}

@@ -55,10 +55,21 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - uses: extractions/setup-just@v2
       - run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
-      - run: npm --prefix frontend ci
-      - name: Build Windows package
-        shell: bash
-        run: just package-windows
+      - name: Build Windows EXE from clean checkout with native resources
+        shell: pwsh
+        run: ./scripts/build-windows.ps1
+      - name: Test native helper lifetime, window geometry and executable resources
+        shell: pwsh
+        timeout-minutes: 5
+        run: |
+          $env:RALLYCUT_TEST_EXE = (Resolve-Path 'build/bin/RallyCut.exe').Path
+          go test . ./backend/childproc ./backend/setup ./backend -count=1 -timeout 3m
+          if ($LASTEXITCODE -ne 0) { throw 'Windows build, process lifetime or regression test failed' }
+      - name: Collect Windows EXE
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path build/release | Out-Null
+          Copy-Item build/bin/RallyCut.exe build/release/RallyCut-windows-amd64.exe
       - uses: actions/upload-artifact@v4
         with:
           name: windows-build

@@ -2,57 +2,49 @@ package backend
 
 import (
 	"context"
-
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-// fitWindowToScreen shrinks and re-centres the initial window when the desktop
-// is smaller than the configured size.
-//
-// Wails does not clamp the window to the work area. On a 1396x760 desktop the
-// 1440x940 window was placed at y=-32, so the whole native title bar (and its
-// close button) sat above the top edge and the app could only be closed from
-// the taskbar. Keep the frame reachable instead of trusting the screen size.
-func fitWindowToScreen(ctx context.Context) {
-	screens, err := wruntime.ScreenGetAll(ctx)
-	if err != nil || len(screens) == 0 {
-		return
+// MainWindowClassName identifies our own window even before it becomes visible.
+const MainWindowClassName = "RallyCutMainWindow"
+
+// Geometry is in physical desktop pixels. Convert only Wails' minimum size to
+// DIP; never mix physical positioning with the logical Screen.Size dimensions.
+type desktopRect struct{ Left, Top, Right, Bottom int }
+type windowPlan struct {
+	Rect                desktopRect
+	MinWidth, MinHeight int
+}
+
+func fitWindowRect(current, work desktopRect, dpi int) (windowPlan, bool) {
+	if dpi <= 0 {
+		dpi = 96
 	}
-	screen := screens[0]
-	for _, candidate := range screens {
-		if candidate.IsCurrent {
-			screen = candidate
-			break
-		}
+	if current.Right <= current.Left || current.Bottom <= current.Top || work.Right <= work.Left || work.Bottom <= work.Top {
+		return windowPlan{}, false
 	}
-	// Reserve room for the native title bar and the taskbar. Reserving the whole
-	// frame twice (as before) shrank the window more than necessary.
-	maxWidth := screen.Size.Width - 64
-	maxHeight := screen.Size.Height - 88
-	if maxWidth <= 0 || maxHeight <= 0 {
-		return
+	margin := (8*dpi + 95) / 96
+	mx := min(margin, (work.Right-work.Left-1)/2)
+	my := min(margin, (work.Bottom-work.Top-1)/2)
+	available := desktopRect{work.Left + mx, work.Top + my, work.Right - mx, work.Bottom - my}
+	maxW, maxH := available.Right-available.Left, available.Bottom-available.Top
+	plan := windowPlan{MinWidth: max(1, min(960, maxW*96/dpi)), MinHeight: max(1, min(600, maxH*96/dpi))}
+	width := min(maxW, max((plan.MinWidth*dpi+48)/96, current.Right-current.Left))
+	height := min(maxH, max((plan.MinHeight*dpi+48)/96, current.Bottom-current.Top))
+	plan.Rect = current
+	if width != current.Right-current.Left || height != current.Bottom-current.Top || current.Left < available.Left || current.Top < available.Top || current.Right > available.Right || current.Bottom > available.Bottom {
+		x, y := available.Left+(maxW-width)/2, available.Top+(maxH-height)/2
+		plan.Rect = desktopRect{x, y, x + width, y + height}
 	}
-	width, height := wruntime.WindowGetSize(ctx)
-	if width <= maxWidth && height <= maxHeight {
-		return
+	return plan, true
+}
+
+func focusWindow(ctx context.Context) {
+	focusExistingWindow(func() bool { return wruntime.WindowIsMinimised(ctx) }, func() { wruntime.WindowUnminimise(ctx) }, func() { wruntime.WindowShow(ctx) })
+}
+func focusExistingWindow(minimized func() bool, restore, show func()) {
+	if minimized() {
+		restore()
 	}
-	if width > maxWidth {
-		width = maxWidth
-	}
-	if height > maxHeight {
-		height = maxHeight
-	}
-	wruntime.WindowSetSize(ctx, width, height)
-	// Centre explicitly: WindowCenter alone left the frame 4px above the top
-	// edge on this desktop, because the outer frame is larger than the size
-	// reported for the client area.
-	x := (screen.Size.Width - width) / 2
-	y := (screen.Size.Height - height) / 2
-	if x < 8 {
-		x = 8
-	}
-	if y < 8 {
-		y = 8
-	}
-	wruntime.WindowSetPosition(ctx, x, y)
+	show()
 }

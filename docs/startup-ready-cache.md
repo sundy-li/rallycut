@@ -22,9 +22,9 @@
 
 `backend/childproc` 统一封装内部命令：Windows 使用 `CREATE_NO_WINDOW`；普通 Python、uv、pip、FFmpeg／FFprobe 同时设置 `HideWindow`。标准输出、标准错误、退出码和 context 取消照常保留，不能用“隐藏窗口”代替错误处理。
 
-用户明确请求的文件选择器只隐藏 PowerShell 控制台，不隐藏选择对话框；资源管理器也保留正常窗口行为。WebView2 原生安装提示不是普通内部命令，仍按其独立流程处理。
+视频选择器已使用 Wails 原生 Unicode 接口，不再启动 PowerShell；用户主动打开的原生对话框与资源管理器保留正常窗口行为。WebView2 原生安装提示不是普通内部命令，仍按其独立流程处理。
 
-快速缓存同时覆盖「固定清单的预制环境」和「本地构建 + 已安装运行时」：后者不嵌入运行时清单（`{"platforms":{}}`），但 exe 旁的 `runtimes/<bundled-id>/` 与其中的 `bundle-manifest.json` 仍参与身份和文件戳校验，命中即直接 ready。只有根本没有已安装运行时（首次安装或旧 Mac 准备方式）才走完整检测。没有固定清单时不会再像旧实现那样“每次启动都完整检测且从不写成功记录”。
+快速缓存同时覆盖「固定清单的预制环境」和「本地构建 + 已安装运行时」：后者不嵌入归档清单（`{"platforms":{}}`），但 exe 旁的 `runtimes/<bundled-id>/` 与其中的 `bundle-manifest.json` 仍参与身份和文件戳校验，命中即直接 ready。缓存缺失或失效时仍需完整检测；已有环境缺模型时也必须进入“验证已安装目录 → 只补模型 → 自检”，不能因为归档清单为空就回退到 uv／venv／pip。非固定清单的开发构建会校验 manifest 结构与所有文件哈希，正式构建额外校验嵌入的固定 manifest 哈希。Mac 旧准备方式不冒充已经拥有此 Windows 安装目录缓存。
 
 ## 测试边界
 

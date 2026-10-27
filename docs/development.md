@@ -10,7 +10,7 @@ Go + Wails v2 桌面宿主、React / TypeScript 界面、Python JSON Lines 分�
 - `backend/timeline`：剪辑缓冲、重叠优先级、输出片段与回合编号。
 - `backend/export`：FFmpeg 编码、逐帧轨迹与编号叠加、不覆盖输出、取消和结果核验。
 - `frontend/src/lib/shortcuts.ts`：快捷键表与说明的单一来源。
-- `backend/menu.go`：原生菜单与界面事件。菜单只在 macOS 构建；Windows 没有原生菜单，退出入口是界面右上角的电源按钮（`App.tsx` `requestQuit`），窗口过小或过大时由 `backend/window.go` 缩放到屏幕内。
+- `backend/menu.go`：原生菜单与界面事件。菜单只在 macOS 构建；Windows 没有原生菜单，退出入口是界面右上角的电源按钮（`App.tsx` `requestQuit`）。Windows 窗口使用 `GetMonitorInfoW.rcWork` 的真实工作区、物理像素和当前窗口 DPI，先调整 Wails 最小尺寸再放置；几何计算在 `backend/window.go`，原生调用在 `backend/window_windows.go`，不套用到 macOS 坐标系。
 - `backend/setup`：用户确认后准备平台运行环境，首次启动门禁与进度；见[首次环境准备](first-run-setup.md)。
 - `vision/neural_analysis.py`：分析管线与共享 TrackingStage。
 
@@ -67,6 +67,22 @@ just skill
 ```
 
 完整发行目录为 `build/skills/rallycut-video-json/`，可复制到仓库外运行，不依赖 Go / Node / Wails。用户显式准备模型后离线分析；`from-project` 是项目转换，不是最新模型重跑。操作说明见 [skill 规范](../skills/rallycut-video-json/SKILL.md)。
+
+## Windows 本地构建与平台回归
+
+在 Windows 安装 Go 1.25+、Node.js 22 与 Wails CLI v2.16.0，然后运行：
+
+```powershell
+./scripts/build-windows.ps1
+# 可指定 Go/Wails 路径及输出 EXE；不需要 GCC/cgo。
+./scripts/build-windows.ps1 -Go 'C:\Program Files\Go\bin\go.exe' -Out 'build\bin\RallyCut.exe'
+```
+
+脚本执行锁文件依赖安装和标准 Wails 构建，不能假设 `frontend/dist` 已提交；构建后检查首页与 JS 产物。Wails 同时生成 DPI manifest、图标、版本资源。`-Out` 相对仓库根目录解析，`-Go` 的 PATH 调整只在脚本进程中有效，退出时恢复。
+
+此脚本只生成程序 EXE，不下载或分发完整运行环境。完整安装器走 `Windows preview` workflow。开发 EXE 要复用已安装环境，需放在与嵌入的 `bundled-id` 对应的 `runtimes/<id>/` 同级目录；请先退出旧窗口，不覆盖运行中的程序。没有嵌入归档清单但已有展开环境时，仍逐文件校验本地 manifest，缺模型只补模型，不创建第二套 venv／执行 pip。正式发布仍保留嵌入清单的固定哈希约束。
+
+`Test` workflow 的 Windows job 从干净检出运行上述脚本，检查 EXE 的 DPI manifest／图标／版本资源和嵌入前端；执行真实 Job Object 父进程强杀后子孙进程退出、原生工作区 API、DPI／任务栏纯几何、最大化窗口聚焦及环境分支回归。测试窗口是隐藏的合成窗口，不等于 Windows ARM、多显示器 GUI 或真实素材全链路已验收。
 
 ## 本地数据与隐私
 

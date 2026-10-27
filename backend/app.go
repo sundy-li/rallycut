@@ -142,8 +142,7 @@ func (a *App) FocusWindow() {
 	if a.ctx == nil {
 		return
 	}
-	wruntime.WindowUnminimise(a.ctx)
-	wruntime.WindowShow(a.ctx)
+	focusWindow(a.ctx)
 }
 
 func (a *App) Shutdown(context.Context) {

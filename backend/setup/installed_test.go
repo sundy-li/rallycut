@@ -105,4 +105,31 @@ func TestInstalledRuntimeFirstUse(t *testing.T) {
 		t.Fatal("model setup duplicated the installed environment")
 	}
 	t.Log("PASS: real installer payload ready before consent; only model is prepared; no per-user environment extraction")
+	// A source/local build without an embedded archive catalog must reuse the
+	// installed directory too, including the missing-model preparation path.
+	localData := t.TempDir()
+	localWorker, err := vision.Install(filepath.Join(localData, "worker"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	local := New(Options{DataDir: localData, Worker: localWorker, InstalledRoot: root, Emit: func(s State) { t.Logf("local installed: %s %s", s.Step, s.Message) }})
+	local.noEmbeddedBundle = true
+	if local.bundleSpec() != nil {
+		t.Fatal("test did not disable embedded catalog")
+	}
+	localPython, err := local.provision(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if localPython != filepath.Join(root, "python", "python.exe") {
+		t.Fatal("local build did not reuse installed interpreter")
+	}
+	if _, err := os.Stat(local.runtimeDir()); !os.IsNotExist(err) {
+		t.Fatal("local build created a second environment")
+	}
+	local.saveReadiness(localPython)
+	if _, ok := local.cachedReadiness(); !ok {
+		t.Fatal("local installed runtime was not cached after preparation")
+	}
+	t.Log("PASS: unpinned local build prepared only the model, reused installed Python and preserved startup caching")
 }

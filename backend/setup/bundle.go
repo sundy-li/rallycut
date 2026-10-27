@@ -48,6 +48,9 @@ func (p *Provisioner) bundleSpec() *BundleSpec {
 	if p.options.Bundle != nil {
 		return p.options.Bundle
 	}
+	if p.noEmbeddedBundle {
+		return nil
+	}
 	var c struct {
 		Platforms map[string]BundleSpec `json:"platforms"`
 	}
@@ -68,27 +71,49 @@ func (s BundleSpec) validate() error {
 func safeBundlePath(name string) bool {
 	return name != "" && !strings.Contains(name, "\\") && !strings.Contains(name, ":") && !strings.HasPrefix(name, "/") && filepath.ToSlash(filepath.Clean(name)) == name && name != ".." && !strings.HasPrefix(name, "../")
 }
-func verifyBundleFiles(ctx context.Context, root string, s BundleSpec) error {
+
+// A release pins this manifest to its build. A local build can reuse a
+// neighboring expanded runtime without an embedded archive pin, but must still
+// validate the manifest structure and every listed file before running helpers.
+func readRuntimeManifest(root string, spec *BundleSpec) (bundleManifest, string, error) {
+	var m bundleManifest
 	manifestPath := filepath.Join(root, "bundle-manifest.json")
 	if info, err := os.Stat(manifestPath); err != nil || info.Size() > 16<<20 {
-		return fmt.Errorf("预制环境缺少有效的文件清单")
+		return m, "", fmt.Errorf("预制环境缺少有效的文件清单")
 	}
-	got, err := fileSHA256(manifestPath)
-	if err != nil || got != s.ManifestSHA256 {
-		return fmt.Errorf("预制环境文件清单校验失败")
+	digest, err := fileSHA256(manifestPath)
+	if err != nil || (spec != nil && digest != spec.ManifestSHA256) {
+		return m, "", fmt.Errorf("预制环境文件清单校验失败")
 	}
 	data, err := os.ReadFile(manifestPath)
 	if err != nil {
-		return err
+		return m, "", err
 	}
-	var m bundleManifest
-	if json.Unmarshal(data, &m) != nil || m.ID != s.ID || m.Platform != "windows/amd64" || len(m.Files) == 0 {
-		return fmt.Errorf("预制环境版本或平台不符")
+	if json.Unmarshal(data, &m) != nil || !runtimeenv.SafeName(m.ID) || m.Platform != "windows/amd64" || len(m.Files) == 0 || (spec != nil && m.ID != spec.ID) {
+		return m, "", fmt.Errorf("预制环境版本或平台不符")
 	}
 	for _, name := range []string{"python/python.exe", "bin/ffmpeg.exe", "bin/ffprobe.exe"} {
 		if _, ok := m.Files[name]; !ok {
-			return fmt.Errorf("环境清单缺少 %s", name)
+			return m, "", fmt.Errorf("环境清单缺少 %s", name)
 		}
+	}
+	for name, file := range m.Files {
+		if !safeBundlePath(name) || file.Bytes < 0 || len(file.SHA256) != 64 {
+			return m, "", fmt.Errorf("环境清单包含无效文件：%s", name)
+		}
+	}
+	return m, digest, nil
+}
+func verifyBundleFiles(ctx context.Context, root string, s BundleSpec) error {
+	return verifyInstalledFiles(ctx, root, &s)
+}
+func verifyInstalledFiles(ctx context.Context, root string, spec *BundleSpec) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	m, _, err := readRuntimeManifest(root, spec)
+	if err != nil {
+		return err
 	}
 	for name, expected := range m.Files {
 		if ctx.Err() != nil {
@@ -193,9 +218,9 @@ func checkReady(checks []CheckItem, id string) bool {
 func runtimeChecksReady(checks []CheckItem) bool {
 	return checkReady(checks, "python") && checkReady(checks, "media") && checkReady(checks, "packages")
 }
-func (p *Provisioner) verifyRuntime(ctx context.Context, root string, s BundleSpec) error {
+func (p *Provisioner) verifyRuntime(ctx context.Context, root string, spec *BundleSpec) error {
 	p.update(.10, "python", "检查已安装的运行环境…", "无需下载或重新安装 Python 包")
-	if err := verifyBundleFiles(ctx, root, s); err != nil {
+	if err := verifyInstalledFiles(ctx, root, spec); err != nil {
 		return err
 	}
 	python := filepath.Join(root, "python", "python.exe")
@@ -226,7 +251,7 @@ func (p *Provisioner) provisionBundle(ctx context.Context, s BundleSpec) (string
 		return "", err
 	}
 	if root := p.expandedRoot(); root != "" {
-		if err := p.verifyRuntime(ctx, root, s); err != nil {
+		if err := p.verifyRuntime(ctx, root, &s); err != nil {
 			return "", err
 		}
 		return filepath.Join(root, "python", "python.exe"), nil

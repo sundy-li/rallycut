@@ -51,7 +51,7 @@ func main() {
 		AssetServer: &assetserver.Options{Assets: assets, Handler: backend.MediaHandler(app), Middleware: backend.MediaMiddleware(app)},
 		OnStartup:   app.Startup, OnShutdown: app.Shutdown, Bind: []interface{}{app},
 		Menu:    backend.ApplicationMenu(app),
-		Windows: &windows.Options{Messages: messages, Theme: windows.Dark},
+		Windows: &windows.Options{Messages: messages, Theme: windows.Dark, WindowClassName: backend.MainWindowClassName},
 	}); err != nil {
 		log.Fatal(err)
 	}
