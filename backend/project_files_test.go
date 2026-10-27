@@ -10,14 +10,16 @@ import (
 )
 
 func TestNormalizeProjectFilePath(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "中文 项目")
 	cases := map[string]string{
-		"/tmp/比赛":                    "/tmp/比赛-rallycut.json",
-		"/tmp/比赛.json":               "/tmp/比赛-rallycut.json",
-		"/tmp/比赛-rallycut.json":      "/tmp/比赛-rallycut.json",
-		"/tmp/比赛-rallycut":           "/tmp/比赛-rallycut.json",
-		"/tmp/another-RALLYCUT.JSON": "/tmp/another-RALLYCUT.JSON",
+		"比赛":                    "比赛-rallycut.json",
+		"比赛.json":               "比赛-rallycut.json",
+		"比赛-rallycut.json":      "比赛-rallycut.json",
+		"比赛-rallycut":           "比赛-rallycut.json",
+		"another-RALLYCUT.JSON": "another-RALLYCUT.JSON",
 	}
-	for input, want := range cases {
+	for name, expected := range cases {
+		input, want := filepath.Join(dir, name), filepath.Join(dir, expected)
 		if got := normalizeProjectFilePath(input); got != want {
 			t.Errorf("normalizeProjectFilePath(%q) = %q, want %q", input, got, want)
 		}
