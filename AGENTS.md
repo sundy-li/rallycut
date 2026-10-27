@@ -91,6 +91,7 @@ UI 回归入口是 `tests/ui/test_workbench.py`，需 Playwright / Chrome 和其
 - 项目 / 缓存 JSON 可原子更新；独立分析 JSON 和视频导出默认拒绝覆盖原片或已有输出，取消与失败不发布半成品。重启恢复为 interrupted，不能伪装已完成。
 - 同时只运行一个分析或导出；Go 子进程使用参数数组 / context，取消后回收，不拼 shell 字符串。流水线线程异常需传播并停止，不无限阻塞队列。
 - macOS 编码用 `h264_videotoolbox` / `hevc_videotoolbox` 时采用码率，不混入软件 preset / CRF；硬件失败整批软件重做，不能混拼编码器。
+- 视频多选必须使用 Wails `OpenMultipleFilesDialog` 原生 Unicode 返回值，不能再用 PowerShell／osascript／zenity stdout 中转路径。此前 Windows 默认控制台编码会把中文变成 `?`；不得裁剪／解码／重写选中文件名或 UNC 前缀，不把对话框错误吞成取消。Windows CI 要跑真实 Unicode 项目导入、JSON 重开、Range 预览和 FFmpeg 导出；原生对话框点击与 Mac 共享盘可达性仍须人工验收。
 - 原片预览走受项目 ID 限制的媒体路由，支持 Range / HEAD；开发模式须绕过 Vite SPA fallback。不要把 HTML 响应误报成 WebView 不支持编码。
 - 球轨迹与球桌叠加是独立开关；没有球桌只禁用相应显示，不能影响轨迹预览。远离本视频对打区域的轨迹带 `off_play=true`（`vision/play_area.py`，自校准、不依赖球桌），只是不画，不删除、不参与回合规则，见 `docs/play-area.md`。
 

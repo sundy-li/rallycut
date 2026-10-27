@@ -274,7 +274,17 @@ func (a *App) CreateProject(name string) (*project.Project, error) {
 		return nil, err
 	}
 	name = normalizeProjectName(name)
-	paths := media.PickVideos(a.ctx)
+	paths, err := media.PickVideos(a.ctx)
+	if err != nil {
+		return nil, err
+	}
+	return a.createProjectFromPaths(name, paths)
+}
+
+// Called after the native dialog. Kept separate so real Windows media paths,
+// probing, persistence and error handling can be tested without GUI fixtures.
+func (a *App) createProjectFromPaths(name string, paths []string) (*project.Project, error) {
+	name = normalizeProjectName(name)
 	if len(paths) == 0 {
 		return nil, nil
 	}
@@ -318,7 +328,10 @@ func (a *App) ImportVideos() (*project.Project, error) {
 	if err := a.ready(); err != nil {
 		return nil, err
 	}
-	paths := media.PickVideos(a.ctx)
+	paths, err := media.PickVideos(a.ctx)
+	if err != nil {
+		return nil, err
+	}
 	a.mu.RLock()
 	current := project.Clone(a.current)
 	a.mu.RUnlock()

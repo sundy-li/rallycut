@@ -10,7 +10,7 @@ on:
       version:
         description: 'Matching prerelease version without v'
         required: true
-        default: '0.1.0-alpha.3-windows.4'
+        default: '0.1.0-alpha.3-windows.5'
         type: string
 
 permissions:

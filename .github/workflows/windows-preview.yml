@@ -6,7 +6,7 @@ on:
       version:
         description: 'Windows test version (without v)'
         required: true
-        default: '0.1.0-alpha.3-windows.4'
+        default: '0.1.0-alpha.3-windows.5'
         type: string
 
 permissions:
@@ -94,6 +94,8 @@ jobs:
           $env:RALLYCUT_INSTALLED_ROOT = $runtime
           go test -v ./backend/setup -run '^TestInstalledRuntimeFirstUse$' -count=1 -timeout 12m
           if ($LASTEXITCODE -ne 0) { throw 'First-use did not recognize the real installed runtime' }
+          go test -v ./backend -run '^TestWindowsUnicodeProjectImportPreviewExport$' -count=1 -timeout 5m
+          if ($LASTEXITCODE -ne 0) { throw 'Windows Unicode import, project reopen, preview or export failed' }
           $data = Join-Path $env:APPDATA 'RallyCut'
           New-Item -ItemType Directory -Force -Path $data | Out-Null
           $marker = Join-Path $data 'installer-preview-marker.txt'

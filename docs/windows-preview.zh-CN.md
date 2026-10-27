@@ -1,11 +1,13 @@
 # Windows 首次环境准备测试版
 
-版本：**v0.1.0-alpha.3-windows.4**。这是 Windows x64 测试版，不是原生 Windows ARM64 版；Windows 11 ARM 将模拟运行 x64 程序。以 Release 中实际构建成功的附件为准。
+版本：**v0.1.0-alpha.3-windows.5**。这是 Windows x64 测试版，不是原生 Windows ARM64 版；Windows 11 ARM 将模拟运行 x64 程序。以 Release 中实际构建成功的附件为准。
 
-[打开私有下载页](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3-windows.4)。需要有 `sundy-li/rallycut` 仓库权限；未授权账号可能看到 404。旧 `alpha.2` 保留，网页的默认下载入口暂不切换。
+[打开私有下载页](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3-windows.5)。需要有 `sundy-li/rallycut` 仓库权限；未授权账号可能看到 404。旧 `alpha.2` 保留，网页的默认下载入口暂不切换。
 
 ## 本次更新
 
+- 修复 Windows 新建／导入时中文目录变成 `??`：视频多选直接使用原生 Unicode 对话框，不再用 PowerShell 控制台文本传路径。保留中文、空格、符号、emoji 和 UNC 共享路径，实际选择窗口不再启动脚本进程。
+- Windows CI 在真实安装后测试中文路径下的合成视频：实际 FFprobe／内容指纹、新建项目、JSON 保存／重开、Range 预览、Python／OpenCV 解码、FFmpeg 导出与原片不变。原生窗口点击、ARM 模拟和 Mac 共享服务可达性仍需人工复测；详见 `docs/windows-file-paths.md`。
 - 首次完整验证成功后保存本机成功记录；后续同一版环境无变化时，只做 Go 进程内的轻量文件核对，直接进入软件，不再跑 Python／FFmpeg／模型前向，也不闪首次准备页。
 - Windows 内部命令静默执行，不再反复弹 DOS 窗口；标准错误和退出码仍保留。用户主动打开的文件选择器、资源管理器仍正常显示。
 - **升级到本版第一次尚无新成功记录，仍需静默完整检查一次**；成功后退出并重新打开，才验证上述快速启动。版本、关键文件、模型或路径变化时会重新检查，不用删除项目或数据目录。
@@ -17,8 +19,8 @@
 ## 下载哪个
 
 - 安装器使用中文、按当前用户安装，并允许 Windows 11 ARM 上的 x64 模拟测试；ARM 上会先提示兼容性限制。卸载保留项目和已下载的环境。
-- **先选安装器**：`RallyCut-0.1.0-alpha.3-windows.4-windows-amd64-setup.exe`。
-- **免安装备用**（同目录必须保留 `RallyCut-runtime-windows-amd64.zip`）：`RallyCut-0.1.0-alpha.3-windows.4-windows-amd64.exe`。它同样使用系统 WebView2，不代表不需要运行环境。
+- **先选安装器**：`RallyCut-0.1.0-alpha.3-windows.5-windows-amd64-setup.exe`。
+- **免安装备用**（同目录必须保留 `RallyCut-runtime-windows-amd64.zip`）：`RallyCut-0.1.0-alpha.3-windows.5-windows-amd64.exe`。它同样使用系统 WebView2，不代表不需要运行环境。
 - **校验清单**：`SHA256SUMS-windows.txt`。
 
 安装包没有正式发布者签名，Windows 可能显示安全提示。先确认来源和校验值；拿不准时联系维护者，不要关闭系统整体安全保护。
@@ -37,6 +39,7 @@
 
 ## 还要试的异常情况
 
+- 在 Windows 11 ARM 原生多选窗口中，直接选择原来的中文目录／`\\Mac\Home` 共享目录，不必改成英文路径；测试多选、取消、新建后播放、项目重开和导出。若共享文件仍不可达，请核对资源管理器中的真实路径和共享权限。
 - 从干净快照开始，断网后点击准备：安装好的依赖不应重复下载；没有模型时应提示模型下载失败、不放行；联网重试能恢复。若模型和环境都已齐备，断网自检应通过。
 - 下载中关闭应用，再打开重试：不应将残缺环境当成功。
 - 准备未完成时，点击菜单或使用快捷键：不能新建、打开、导入或跳入工作台。

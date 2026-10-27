@@ -86,7 +86,11 @@ func Probe(ctx context.Context, path string) (project.Video, error) {
 	}
 	info, err := os.Stat(abs)
 	if err != nil {
-		return v, err
+		hint := "请确认文件仍然存在，且当前账户有读取权限。"
+		if runtime.GOOS == "windows" && (strings.HasPrefix(abs, `\\`) || strings.HasPrefix(strings.ToLower(abs), `c:\mac\`)) {
+			hint = "请确认 Windows 能访问此共享目录、共享功能已开启；也可以先复制到 Windows 本地目录后重新选择。中文路径受支持，不需要改成英文名。"
+		}
+		return v, fmt.Errorf("无法访问视频 %q。%s\n%w", abs, hint, err)
 	}
 	if !info.Mode().IsRegular() {
 		return v, fmt.Errorf("请选择普通视频文件")
