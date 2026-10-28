@@ -24,6 +24,8 @@
 
 视频选择器已使用 Wails 原生 Unicode 接口，不再启动 PowerShell；用户主动打开的原生对话框与资源管理器保留正常窗口行为。WebView2 原生安装提示不是普通内部命令，仍按其独立流程处理。
 
+Windows 上 `childproc.Init()` 还把应用进程放进带 `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` 的 Job Object：从任务管理器强制结束、崩溃或正常退出时，Python worker、FFmpeg／FFprobe、PowerShell 选择器与 WebView2 等子进程随父进程一起结束。此前强杀 RallyCut 会留下继续占满一个核心的分析进程，直到整段视频跑完。
+
 快速缓存同时覆盖「固定清单的预制环境」和「本地构建 + 已安装运行时」：后者不嵌入归档清单（`{"platforms":{}}`），但 exe 旁的 `runtimes/<bundled-id>/` 与其中的 `bundle-manifest.json` 仍参与身份和文件戳校验，命中即直接 ready。缓存缺失或失效时仍需完整检测；已有环境缺模型时也必须进入“验证已安装目录 → 只补模型 → 自检”，不能因为归档清单为空就回退到 uv／venv／pip。非固定清单的开发构建会校验 manifest 结构与所有文件哈希，正式构建额外校验嵌入的固定 manifest 哈希。Mac 旧准备方式不冒充已经拥有此 Windows 安装目录缓存。
 
 ## 测试边界

@@ -10,8 +10,8 @@
   "info": {
     "companyName": "RallyCut",
     "productName": "RallyCut",
-    "productVersion": "0.1.0-alpha.3",
+    "productVersion": "0.1.0",
     "copyright": "Copyright © 2026 RallyCut",
-    "comments": "本地乒乓球比赛集锦剪辑，全部处理都在本机完成。"
+    "comments": "0.1.0-alpha.3 · 本地乒乓球比赛集锦剪辑，全部处理都在本机完成。"
   }
 }

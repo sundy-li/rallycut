@@ -80,6 +80,10 @@ just skill
 
 脚本执行锁文件依赖安装和标准 Wails 构建，不能假设 `frontend/dist` 已提交；构建后检查首页与 JS 产物。Wails 同时生成 DPI manifest、图标、版本资源。`-Out` 相对仓库根目录解析，`-Go` 的 PATH 调整只在脚本进程中有效，退出时恢复。
 
+图标来自仓库中的 `build/appicon.png`（由 `design/logo/final/rallycut-appicon-1024.png` 复制），必须随仓库保留，否则 Wails 会退回通用图标。`wails.json` 的 `info` 段提供产品名、版本与版权；Windows 文件版本号必须是纯数字（当前 `0.1.0`），alpha 标识写进 `comments`，否则资源管理器里的版本属性不可读。
+
+桌面端启用单实例锁：再次启动只唤醒已有窗口，避免两个进程同时写同一项目 JSON 与分析缓存。Windows 最小窗口为 960×600，更小的屏幕依赖界面在 950／660 断点下的紧凑布局。
+
 此脚本只生成程序 EXE，不下载或分发完整运行环境。完整安装器走 `Windows preview` workflow。开发 EXE 要复用已安装环境，需放在与嵌入的 `bundled-id` 对应的 `runtimes/<id>/` 同级目录；请先退出旧窗口，不覆盖运行中的程序。没有嵌入归档清单但已有展开环境时，仍逐文件校验本地 manifest，缺模型只补模型，不创建第二套 venv／执行 pip。正式发布仍保留嵌入清单的固定哈希约束。
 
 `Test` workflow 的 Windows job 从干净检出运行上述脚本，检查 EXE 的 DPI manifest／图标／版本资源和嵌入前端；执行真实 Job Object 父进程强杀后子孙进程退出、原生工作区 API、DPI／任务栏纯几何、最大化窗口聚焦及环境分支回归。测试窗口是隐藏的合成窗口，不等于 Windows ARM、多显示器 GUI 或真实素材全链路已验收。
