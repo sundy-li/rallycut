@@ -37,6 +37,12 @@ class ReleaseVerifierTests(unittest.TestCase):
     def test_complete_release(self):
         self.verify()
 
+    def test_local_build_runtime_id_matches_current_download(self):
+        root = Path(__file__).resolve().parents[2]
+        version = json.loads((root / 'site/release.json').read_text())['version']
+        identity = (root / 'backend/runtimeenv/bundled-id.txt').read_text().strip()
+        self.assertEqual(identity, 'windows-x64-' + version)
+
     def test_missing_installer_rejected(self):
         (self.root / self.win[1]).unlink()
         with self.assertRaises(ValueError):
