@@ -10,6 +10,15 @@
 - Cloudflare Pages 项目名是 `rallycut`，不是 `rallycut-byc`；平台分配的访问域名带后缀，部署仍使用 `--project-name rallycut`。
 - 网站 Direct Upload，不会因 GitHub push 自动更新。构建额度与收费按平台当前条款，不默认无限免费。
 
+## v0.1.0-alpha.3 发布结果（2026-10-28）
+
+- [Release workflow 40617938515](https://github.com/sundy-li/rallycut/actions/runs/40617938515) 全部成功；发布标签固定在 `af2d04a02e14fb57f8d8560bf05a4c1640d07022`。本地源码随后将默认 `bundled-id` 同步为本版（正式 Windows 包在 CI 已生成相同 ID），[Test 40618252515](https://github.com/sundy-li/rallycut/actions/runs/40618252515) 通过。
+- 7 项新附件已从 Release 重新下载并通过 `scripts/verify_release.py`；macOS 两个架构的 production 信息与签名再校验通过。Windows 安装器 **163,315,842 bytes**，macOS ZIP **9,002,509 bytes**。
+- 安装后真实首次准备测试覆盖有／无嵌入归档清单的缺模型路径；重复启动 readiness 核对 **34.9575 ms**，未调用 Python／FFmpeg／完整检测。该耗时只代表该 x64 runner，不推断 ARM VM 性能。
+- Pages 生产部署 `16ef1fd7`，中文首页／四篇指南、320–1440px 布局、两段演示播放及拖动、下载入口已通过真实浏览器检查；私有源码／模型路径返回 404。
+- 已删除 6 个历史 Release、27 个上传附件及其本地／远端版本标签；当前唯一 Release 和版本标签为 `v0.1.0-alpha.3`。未删除 Git 提交或用户项目／原片／成片，仓库仍 private。
+- 操作前的 Release 元数据、完整源码 refs bundle 与本次新附件保存在本机临时目录 `/tmp/rallycut-alpha3-release-20261028/`。bundle 只用于源码引用恢复，不包含已经删除的旧安装包，不是永久异地备份。
+
 ## 权限边界
 
 Pages 默认公开，`noindex` 不是访问控制；源码和 Release 仍私有。没有仓库权限的用户不能匿名下载，GitHub 可能返回 404。
