@@ -14,6 +14,42 @@ async function files(dir) {
   }
   return result;
 }
+// Read frame delays from GIF blocks, not byte patterns that may also occur
+// inside compressed image data. No media executable is needed on the CI host.
+function gifDurationMs(data) {
+  assert.match(data.toString('ascii', 0, 6), /^GIF8[79]a$/);
+  let offset = 13 + ((data[10] & 0x80) ? 3 * (2 << (data[10] & 7)) : 0);
+  let delay = 0, duration = 0;
+  const skipBlocks = () => {
+    for (;;) {
+      assert.ok(offset < data.length, 'truncated GIF block');
+      const size = data[offset++];
+      if (!size) return;
+      offset += size;
+      assert.ok(offset <= data.length, 'truncated GIF data');
+    }
+  };
+  while (offset < data.length) {
+    const marker = data[offset++];
+    if (marker === 0x3b) return duration;
+    if (marker === 0x21) {
+      const label = data[offset++];
+      if (label === 0xf9) {
+        assert.equal(data[offset], 4);
+        delay = data.readUInt16LE(offset + 2) * 10;
+      }
+      skipBlocks();
+    } else if (marker === 0x2c) {
+      const packed = data[offset + 8];
+      offset += 9 + ((packed & 0x80) ? 3 * (2 << (packed & 7)) : 0);
+      offset++; // LZW minimum code size.
+      skipBlocks();
+      duration += delay;
+      delay = 0;
+    } else assert.fail(`unexpected GIF block ${marker}`);
+  }
+  assert.fail('missing GIF trailer');
+}
 const output = await files(dist);
 const htmlFiles = output.filter(f => f.endsWith('.html'));
 
@@ -83,7 +119,9 @@ test('real demo is accessible, opt-in to load, and within static-host file limit
   assert.ok(html.includes('id="demo-caption"'));
   assert.equal(/\bautoplay\b/.test(html), false);
   assert.ok((await fs.stat(path.join(dist, 'media/rallycut-demo.mp4'))).size < 20 * 1024 * 1024);
-  assert.ok((await fs.stat(path.join(dist, 'media/rallycut-preview.gif'))).size < 4 * 1024 * 1024);
+  const preview = await fs.readFile(path.join(dist, 'media/rallycut-preview.gif'));
+  assert.ok(preview.length < 4 * 1024 * 1024);
+  assert.ok(gifDurationMs(preview) >= 10_000, 'export preview GIF must show at least 10 seconds');
 });
 test('README stays concise and its demo and release links exist', async () => {
   const readme = await fs.readFile(new URL('../../README.md', import.meta.url), 'utf8');

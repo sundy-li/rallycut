@@ -37,4 +37,14 @@ go run ./tools/export-demo \
 
 工具只读取项目，不修改原视频或项目；导出超过上限会拒绝。源码不内嵌用户文件路径或模型数据。网站版本另作 720p H.264 压缩，GIF 为短预览，均由同一实际导出生成。该演示用于说明产品功能，**不作为整场准确率、独立测试集成绩或模型重新推理的证明**。
 
+导出效果 GIF 更新为同一视频前 12 秒正常速度预览（8 FPS、400×225、48 色、96 帧循环，约 3.9 MB），不是把原来的 6 秒重复播放。可从已批准的公开 MP4 复现；先写临时文件、检查后再替换 GIF，不能覆盖视频：
+
+```bash
+ffmpeg -nostdin -i site/public/media/rallycut-demo.mp4 -t 12 \
+  -filter_complex '[0:v]fps=8,scale=400:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=48:stats_mode=full[p];[b][p]paletteuse=dither=none:diff_mode=rectangle' \
+  -loop 0 /tmp/rallycut-preview-12s.gif
+```
+
+`site/test/site.test.mjs` 直接读取 GIF 帧延时，要求导出效果预览不少于 10 秒且小于 4 MiB；工作台 GIF 是另一资源，不受此时长要求影响。
+
 用户指定此段作为演示不代表维护者获得赛事完整素材的其他使用权；后续更换素材或扩大分发范围时仍应确认相关权利。不要把原片或未授权的完整成片提交到仓库。
