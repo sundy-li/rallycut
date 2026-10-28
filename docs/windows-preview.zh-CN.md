@@ -1,6 +1,6 @@
 # Windows 安装与验证说明
 
-当前统一版本：**v0.1.0-alpha.3**。[打开私有下载页](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3)。需要 `sundy-li/rallycut` 仓库权限；未授权账号可能看到 404。历史 Windows 测试版与旧 macOS 下载已撤下，网站默认入口统一指向本版。
+当前统一版本：**v0.1.0-alpha.3**。[打开下载页](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3)。仓库与安装包已公开，无需邀请或登录即可下载。历史 Windows 测试版与旧 macOS 下载已撤下，网站默认入口统一指向本版。
 
 这是 Windows x64 包，不是原生 ARM64；Windows 11 ARM 将通过模拟运行。通用用户说明见[安装指南](getting-started.zh-CN.md)，功能与限制见[本版更新](releases.zh-CN.md)。
 

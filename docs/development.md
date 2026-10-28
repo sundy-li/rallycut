@@ -96,4 +96,4 @@ macOS 默认目录：`~/Library/Application Support/RallyCut/`，含最近项目
 
 ## 网站与发布
 
-见[发布维护](publishing.zh-CN.md)。网站以独立静态页面为主，仅演示 MP4 使用限定路径的 Pages Function 补齐视频 Range；只允许列出的用户文档和经明确批准的短演示进入公开输出，不部署源码根目录。GitHub 源码与 Release 仍为 private。
+见[发布维护](publishing.zh-CN.md)。网站以独立静态页面为主，仅演示 MP4 使用限定路径的 Pages Function 补齐视频 Range；只允许列出的用户文档和经明确批准的短演示进入公开输出，不部署源码根目录。GitHub 仓库与 Release 已公开，可匿名浏览源码和下载安装包；用户原片、项目、凭据和未授权资源仍不得上传。

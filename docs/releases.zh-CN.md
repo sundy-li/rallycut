@@ -2,7 +2,7 @@
 
 ## v0.1.0-alpha.3 · 安装与 Windows 体验更新
 
-[打开本版 GitHub Release](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3)。本版统一提供 **macOS 通用包、Windows x64 完整安装器和免安装备用包**，附平台 SHA-256 校验清单。仓库仍为私有，下载需要已获授权的 GitHub 账号；公开网站不提供匿名安装包下载。
+[打开本版 GitHub Release](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3)。本版统一提供 **macOS 通用包、Windows x64 完整安装器和免安装备用包**，附平台 SHA-256 校验清单。仓库和 Release 安装包现已公开，无需邀请或登录即可浏览、下载；公开网站提供 GitHub 下载入口，不托管原片或项目。
 
 ### 安装与启动
 

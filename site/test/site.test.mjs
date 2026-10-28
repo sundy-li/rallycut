@@ -75,11 +75,13 @@ test('all local URLs resolve to a file and fragments resolve to an ID', async ()
     }
   }
 });
-test('private beta access and dependency limitations remain visible', async () => {
+test('public downloads and dependency limitations remain visible', async () => {
   const html = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
   assert.ok(html.includes(config.releaseUrl));
-  assert.ok(html.includes('下载需要 GitHub 仓库权限。'));
-  for (const term of ['Windows 完整安装器已含 Python', 'FFmpeg', '约 6 MB', '后续启动跳过准备页', '正式发布者签名／Apple 公证', '不捆绑模型权重', '不支持匿名下载']) assert.ok(html.includes(term), term);
+  assert.ok(html.includes('源码与安装包已公开。'));
+  assert.ok(html.includes('无需邀请或登录 GitHub 即可下载'));
+  assert.ok(html.includes('GitHub 公开仓库'));
+  for (const term of ['Windows 完整安装器已含 Python', 'FFmpeg', '约 6 MB', '后续启动跳过准备页', '正式发布者签名／Apple 公证', '不捆绑模型权重']) assert.ok(html.includes(term), term);
   assert.equal(html.includes('需自行安装 Python'), false);
   assert.ok(config.releaseUrl.endsWith(`/v${config.version}`));
   assert.equal(/<script|<iframe|<form/i.test(html), false);
@@ -91,6 +93,7 @@ test('public guides consistently describe the current installer and no retired d
       assert.equal(tag, `v${config.version}`, filename);
     }
     assert.equal(/尚未重新发布安装包|需自行安装 Python 3\.10/.test(html), false, filename);
+    assert.equal(/下载需要 GitHub 仓库权限|不支持匿名下载|GitHub 私有仓库|接受维护者邀请|邀请你的维护者|仓库内文档，需要 GitHub 仓库权限/.test(html), false, filename);
   }
 });
 test('site has no private runtime artifacts, local source paths or unresolved markdown links', async () => {
@@ -127,6 +130,8 @@ test('README stays concise and its demo and release links exist', async () => {
   const readme = await fs.readFile(new URL('../../README.md', import.meta.url), 'utf8');
   assert.ok(readme.split('\n').length <= 50);
   assert.ok(readme.includes(config.releaseUrl));
+  assert.ok(readme.includes('源码和安装包已公开'));
+  assert.equal(/私有种子测试|GitHub 下载需要仓库权限/.test(readme), false);
   assert.ok(readme.includes('site/public/media/rallycut-preview.gif'));
   assert.ok(readme.includes('site/public/media/rallycut-workbench-preview.gif'));
   assert.ok(readme.includes('#workbench'));

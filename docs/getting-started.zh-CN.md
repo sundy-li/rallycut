@@ -8,7 +8,7 @@
 
 ## 1. 下载并安装
 
-当前为私有种子测试。先接受维护者的 GitHub 邀请，再登录被邀请的账号下载；没有权限时，下载链接会显示 404。国内访问不便时，可向维护者索取同版本安装包及 SHA-256 校验值；不要把源码下载包当安装包。
+当前为公开预览版。仓库与 Release 安装包均可直接访问，**无需邀请、仓库权限或登录 GitHub 即可下载**。在 Release 的 Assets 中选择适合系统的安装包，不要把自动生成的源码 ZIP／tar.gz 当安装包。国内访问不便时，可联系维护者获取同版本安装包及 SHA-256 校验值。
 
 - **macOS**：下载 `RallyCut-0.1.0-alpha.3-macos-universal.zip`，解压后将 `RallyCut.app` 拖到“应用程序”。Apple Silicon 是主要测试平台，Intel Mac 仍需进一步实机验证。
 - **Windows（实验性）**：首选 `RallyCut-0.1.0-alpha.3-windows-amd64-setup.exe`，中文、按当前用户安装，已包含私有 Python、FFmpeg 和分析依赖。需要 WebView2；缺少时先显示原生安装确认。免安装备用需同时下载同版 EXE 与 `RallyCut-runtime-windows-amd64.zip` 并放在同一目录，不要只拷贝 EXE。

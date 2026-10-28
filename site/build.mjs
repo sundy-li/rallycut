@@ -37,9 +37,9 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
   const target = pages.find(([source]) => source === href);
   if (target) token.attrSet('href', `/guide/${target[1]}`);
   else if (!/^(https?:|mailto:|#|\/)/.test(href)) {
-    // Internal engineering documents are not copied into the public site.
+    // Engineering documents are linked on public GitHub, not copied into Pages.
     token.attrSet('href', `${config.repository}/blob/main/docs/${href}`);
-    token.attrSet('title', '仓库内文档，需要 GitHub 仓库权限');
+    token.attrSet('title', '在 GitHub 公开仓库中查看文档');
   }
   return defaultLink(tokens, idx, options, env, self);
 };
@@ -51,4 +51,4 @@ for (const [source, filename, title] of pages) {
 <body class="docs-page"><a class="skip-link" href="#content">跳转到正文</a><header class="site-header"><a class="brand" href="/"><img src="/icon.svg" width="34" height="34" alt="">RallyCut<span class="beta">种子测试版</span></a><a class="nav-link" href="/#download">下载种子版 ↗</a></header><div class="docs-layout"><aside class="docs-nav"><p class="eyebrow">使用指南</p><nav aria-label="文档目录">${nav}</nav><p class="side-note">视频留在本机。<br>结果由你决定。</p></aside><main class="prose" id="content">${md.render(markdown)}</main></div><footer class="site-footer"><a href="/">RallyCut</a><span>种子测试 · 请在分享日志前移除个人信息。</span></footer></body></html>`;
   await fs.writeFile(path.join(dist, 'guide', filename), html);
 }
-console.log(`Built ${dist}: landing page + ${pages.length} Chinese guides (only approved demo media; no source videos or private reports).`);
+console.log(`Built ${dist}: landing page + ${pages.length} Chinese guides (only approved demo media; no source videos or engineering reports).`);

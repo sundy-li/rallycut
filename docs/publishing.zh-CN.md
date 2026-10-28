@@ -4,7 +4,7 @@
 
 ## 当前交付
 
-- GitHub：`sundy-li/rallycut`，**private**。
+- GitHub：`sundy-li/rallycut`，**public**；源码、文档和 Release 安装包可匿名浏览／下载，无需邀请。
 - 当前统一版本：`v0.1.0-alpha.3`，预发布；同一个 Release 提供 macOS 通用包与 Windows 完整安装器／免安装包，历史 Release 在新版验证后撤下。以标签成功构建的实际 Assets 为准。
 - 免费网站：**https://rallycut-byc.pages.dev/**，中文指南：**https://rallycut-byc.pages.dev/guide/**。
 - Cloudflare Pages 项目名是 `rallycut`，不是 `rallycut-byc`；平台分配的访问域名带后缀，部署仍使用 `--project-name rallycut`。
@@ -16,18 +16,18 @@
 - 7 项新附件已从 Release 重新下载并通过 `scripts/verify_release.py`；macOS 两个架构的 production 信息与签名再校验通过。Windows 安装器 **163,315,842 bytes**，macOS ZIP **9,002,509 bytes**。
 - 安装后真实首次准备测试覆盖有／无嵌入归档清单的缺模型路径；重复启动 readiness 核对 **34.9575 ms**，未调用 Python／FFmpeg／完整检测。该耗时只代表该 x64 runner，不推断 ARM VM 性能。
 - Pages 生产部署 `16ef1fd7`，中文首页／四篇指南、320–1440px 布局、两段演示播放及拖动、下载入口已通过真实浏览器检查；私有源码／模型路径返回 404。
-- 已删除 6 个历史 Release、27 个上传附件及其本地／远端版本标签；当前唯一 Release 和版本标签为 `v0.1.0-alpha.3`。未删除 Git 提交或用户项目／原片／成片，仓库仍 private。
+- 已删除 6 个历史 Release、27 个上传附件及其本地／远端版本标签；当前唯一 Release 和版本标签为 `v0.1.0-alpha.3`。未删除 Git 提交或用户项目／原片／成片。发版时仓库为 private，随后已由维护者改为 public，当前可匿名下载。
 - 操作前的 Release 元数据、完整源码 refs bundle 与本次新附件保存在本机临时目录 `/tmp/rallycut-alpha3-release-20261028/`。bundle 只用于源码引用恢复，不包含已经删除的旧安装包，不是永久异地备份。
 
 ## 权限边界
 
-Pages 默认公开，`noindex` 不是访问控制；源码和 Release 仍私有。没有仓库权限的用户不能匿名下载，GitHub 可能返回 404。
+GitHub 仓库与 Release 已公开，用户无需邀请或登录即可浏览源码、文档和下载安装包；提交 Issue／参与协作仍需 GitHub 账号。Pages 只提供下载入口与精选指南，不代表托管全部仓库内容，`noindex` 也不是访问控制。
 
-邀请协作者也会授予源码访问权限，不是“只下载”权限。如果要让普通用户只拿安装包，需另行确认独立分发仓库或对象存储方案，不能在网页里放 GitHub Token 绕过权限。不要把 GitHub PAT、Cloudflare Token、私有项目或源视频放进网站。
+公开仓库不等于所有资源获得再分发授权。模型权重的独立分发／商用条款仍须确认；用户私有视频、项目、日志中的个人信息和凭据仍不得上传。不要把 GitHub PAT、Cloudflare Token 或其他访问令牌放进网站，也不需要为公开下载嵌入令牌。
 
 ## 站点内容
 
-`site/build.mjs` 只转换固定允许列表：`docs/README.md`、`getting-started.zh-CN.md`、`faq.zh-CN.md`、`releases.zh-CN.md`。技术报告与开发者文档不复制；链接需要仓库权限。
+`site/build.mjs` 只转换固定允许列表：`docs/README.md`、`getting-started.zh-CN.md`、`faq.zh-CN.md`、`releases.zh-CN.md`。技术报告与开发者文档不复制到 Pages，通过链接在公开 GitHub 仓库浏览，无需仓库权限。
 
 网站当前统一使用中文（包括首页、文档导航、视频说明和 404），暂不提供语言切换；RallyCut 与必要技术名称保留原名。
 
@@ -120,12 +120,12 @@ Release 附件删除不可直接撤销；Git refs 备份只保留源码定位，
 
 发布前检查：
 
-- 仓库仍 private；保留正常提交历史，不为发版重新整理根提交。
+- 仓库为 public；确认匿名用户可访问当前 Release 与安装包。保留正常提交历史，不为发版重新整理根提交。
 - 最新源码在包中，Go / Python 运行时资源清单完整，默认测试不依赖用户私有素材。
 - 安装包及校验清单齐全；没有模型、原片、项目、运行日志或凭据。
 - macOS `codesign --verify --deep --strict`、`lipo -archs` 和 production 构建信息通过；ad-hoc 不是 Apple 公证。
 - 首页、四篇指南、MP4、GIF 与封面返回 200，未知路径、`/.git/config`、模型路径返回 404，视频 MIME 和 Range 响应可用。
-- 页面没有让用户误以为匿名可下载，也没有声称 Windows、Intel Mac 或全新机器已经实机验收。
+- 页面明确说明公开下载无需邀请或登录，同时没有声称 Windows ARM、Intel Mac 或全新机器已经实机验收。
 - 旧版只在新版可用后删除；Pages 链接与 README 指向同一新版。
 
 回退网站可以从本地备份源码重新构建部署；应用回退前先备份项目，不保证旧版可读新项目。撤下页面或 Release 不能收回已被下载的文件。停止种子测试时同时检查下载、协作者和公开站点权限。
