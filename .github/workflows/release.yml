@@ -72,8 +72,8 @@ jobs:
           app=build/bin/RallyCut.app
           binary="$app/Contents/MacOS/RallyCut"
           codesign --verify --deep --strict "$app"
-          lipo -verify_arch arm64 x86_64 "$binary"
           for arch in arm64 x86_64; do
+            lipo "$binary" -verify_arch "$arch"
             thin="$RUNNER_TEMP/RallyCut-$arch"
             lipo "$binary" -thin "$arch" -output "$thin"
             go version -m "$thin" | tee "$RUNNER_TEMP/build-info-$arch.txt"
