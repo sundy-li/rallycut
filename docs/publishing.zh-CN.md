@@ -5,7 +5,7 @@
 ## 当前交付
 
 - GitHub：`sundy-li/rallycut`，**private**。
-- 本次版本：`v0.1.0-alpha.2`，预发布；安装包以该标签成功构建后的 Release Assets 为准。
+- 当前统一版本：`v0.1.0-alpha.3`，预发布；同一个 Release 提供 macOS 通用包与 Windows 完整安装器／免安装包，历史 Release 在新版验证后撤下。以标签成功构建的实际 Assets 为准。
 - 免费网站：**https://rallycut-byc.pages.dev/**，中文指南：**https://rallycut-byc.pages.dev/guide/**。
 - Cloudflare Pages 项目名是 `rallycut`，不是 `rallycut-byc`；平台分配的访问域名带后缀，部署仍使用 `--project-name rallycut`。
 - 网站 Direct Upload，不会因 GitHub push 自动更新。构建额度与收费按平台当前条款，不默认无限免费。
@@ -39,20 +39,22 @@ site/public/media/rallycut-workbench-poster.webp
 
 ## 源码提交与版本
 
-用户要求本次整理为**一个根提交**。操作前备份原 Git refs 和工作区；把最新源码、依赖清单、文档与允许的短演示审查后纳入新根提交。主分支更新使用 `--force-with-lease`，远端已变化时停止，不覆盖未知提交。不要把本次一次性的历史整理当日常发布流程。
+早期已按用户要求整理过一次根提交，那不是日常发布步骤。后续发布不改写提交历史，不 force push；本次“删除历史版本”仅指已确认的旧 Release／附件及版本标签，不删除 Git 提交、CI 记录、项目或视频。
 
-后续常规发布不必再次改历史：
+常规发布：
 
 ```bash
 git status --short
 # 确认本版已提交、测试通过且标签未占用
-git tag v0.1.0-alpha.2
+git tag v0.1.0-alpha.3
 git push origin main
-git push origin v0.1.0-alpha.2
+git push origin v0.1.0-alpha.3
 gh run list --repo sundy-li/rallycut --workflow release.yml --limit 5
 ```
 
-发布 workflow 在 macOS / Windows 原生 runner 构建，生成 `SHA256SUMS-macos.txt`、`SHA256SUMS-windows.txt`，两个平台成功后创建预发布 Release。编译成功不等于全新机器首启验收，也不等于 Windows 真机验收。
+`release.yml` 在 macOS runner 生成通用包并校验两种架构、production 和 ad-hoc 签名；Windows 复用 `windows-preview.yml` 的完整预制环境、模型真实前向、安装／卸载保留数据、Unicode 导入／预览／导出、readiness 缓存与原生 Job Object／窗口／EXE 资源测试，不能退回仅编译 EXE 的轻量发布。两端成功后用 `scripts/verify_release.py` 检查精确的 7 项交付、完整 SHA-256 覆盖和 runtime 版本，再创建预发布。手动 workflow_dispatch 只构建，不发布。
+
+下载新附件后再执行 `python scripts/verify_release.py <下载目录> --version 0.1.0-alpha.3`。CI 成功不等于 Windows ARM VM、原生选择器点击、共享盘网络、Intel Mac 或多显示器真机验收。
 
 `just package-macos` 会写 `build/bin`，不要与同一工作树中的 `wails dev` 并行；使用 CI 独立构建。本次不关闭用户开发实例、不上传旧 ZIP 冒充新构建。
 
@@ -92,22 +94,24 @@ uv run --with playwright python tests/site/test_download_page.py
 
 顺序不能倒置：
 
-1. 新标签的 Release 与测试 workflow 成功。
-2. 重新下载新 Assets，核验 SHA-256；确认 macOS universal、production、ad-hoc 签名以及不含权重／原片。
-3. 部署 Pages，检查页面、指南、演示视频与新版本链接。
-4. 按用户要求删除旧 `v0.1.0-alpha.1` Release 及标签，保留本地备份，不自动重建旧版。
+1. 新标签 Release 与测试 workflow 成功。
+2. 重新下载全部新 Assets，运行 `scripts/verify_release.py`，确认 macOS 与 Windows 交付齐全；归档原 Release 元数据与 tag → commit 映射，备份只留本机临时目录，不提交或公开。
+3. 部署 Pages，检查首页、指南、演示视频与新版本链接。
+4. 本次用户明确要求删除所有历史版本；仅删除操作开始时已列出的 6 个旧 Release：`v0.1.0-alpha.2`、`v0.1.0-alpha.3-windows.1` 至 `.5`，包括附件及对应远端／本地标签，保留当前 `v0.1.0-alpha.3`。未来新增版本不自动纳入本次删除。
+5. 重新列出远端 Releases／标签，确认唯一下载版本与站点、README 一致。删除标签不删除提交历史，也不删除用户数据。
 
 ```bash
-gh release delete v0.1.0-alpha.1 --repo sundy-li/rallycut --yes --cleanup-tag
+# 对已经核对、明确授权的旧标签逐个执行；不要通配删除未知版本。
+gh release delete <已确认的旧标签> --repo sundy-li/rallycut --yes --cleanup-tag
 ```
 
-清理远端旧标签后也应删除本地旧标签，以免以后误推。只操作这个明确的旧版本，不批量删除其他版本或仓库。
+Release 附件删除不可直接撤销；Git refs 备份只保留源码定位，不等于附件备份。新版未验证或下载站未切换时，不能先删除旧版。
 
 ## 验收与回退
 
 发布前检查：
 
-- 仓库仍 private；主分支只有本次整理后的一个提交。
+- 仓库仍 private；保留正常提交历史，不为发版重新整理根提交。
 - 最新源码在包中，Go / Python 运行时资源清单完整，默认测试不依赖用户私有素材。
 - 安装包及校验清单齐全；没有模型、原片、项目、运行日志或凭据。
 - macOS `codesign --verify --deep --strict`、`lipo -archs` 和 production 构建信息通过；ad-hoc 不是 Apple 公证。

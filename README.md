@@ -28,11 +28,11 @@
 
 ## 开始使用
 
-1. [下载安装包](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.2)，按[安装指南](docs/getting-started.zh-CN.md)完成首次准备。
+1. [下载安装包](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3)，按[安装指南](docs/getting-started.zh-CN.md)完成首次准备。
 2. 新建项目 → 导入视频 → 分析并复核回合。
 3. 在导出栏勾选“球轨迹”“回合编号”，导出你的集锦。
 
-视频在本机处理，不需要上传。当前为私有种子测试，**GitHub 下载需要仓库权限**；macOS 优先，Windows 为实验性支持。首次使用需要联网准备环境，并自行安装 Python 和 FFmpeg。安装包尚未完成正式发布者签名／公证；自动识别结果仍需人工复核。
+视频在本机处理，不需要上传。当前为私有种子测试，**GitHub 下载需要仓库权限**；macOS 优先，Windows 为实验性支持。Windows 完整安装器已含依赖，缺模型时确认后下载；macOS 首次确认后准备私有环境，无需手动安装 Python／FFmpeg。安装包尚未完成正式发布者签名／公证；自动识别结果仍需人工复核。
 
 [安装与使用](docs/getting-started.zh-CN.md) · [常见问题](docs/faq.zh-CN.md) · [本版更新](docs/releases.zh-CN.md)
 

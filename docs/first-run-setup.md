@@ -1,6 +1,6 @@
 # 首次启动：检测、确认与环境准备
 
-本页记录最初的逐项下载／venv 方案，Mac 仍沿用此路径。Windows 新测试版已改为预制 CPU 环境包，详见 [预制环境、续传与回滚](runtime-bundles.md) 和 [Windows 测试说明](windows-preview.zh-CN.md)。网站默认 `alpha.2` 不会因源码变动自动替换。下面的旧 DirectML、pip、目录布局说明不代表新的 Windows 预制包。
+本页记录最初的逐项下载／venv 方案，Mac 仍沿用此路径。Windows 新测试版已改为预制 CPU 环境包，详见 [预制环境、续传与回滚](runtime-bundles.md) 和 [Windows 测试说明](windows-preview.zh-CN.md)。网站默认版本统一为 `v0.1.0-alpha.3`，安装步骤以最新版用户指南为准。下面的旧 DirectML、pip、目录布局说明不代表新的 Windows 预制包。
 
 ## 用户看到的流程
 

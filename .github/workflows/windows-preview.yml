@@ -6,7 +6,13 @@ on:
       version:
         description: 'Windows test version (without v)'
         required: true
-        default: '0.1.0-alpha.3-windows.5'
+        default: '0.1.0-alpha.3'
+        type: string
+  workflow_call:
+    inputs:
+      version:
+        description: 'Release version without v'
+        required: true
         type: string
 
 permissions:
@@ -71,6 +77,13 @@ jobs:
       - name: Build x64 application and installer
         shell: bash
         run: just package-windows
+      - name: Verify packaged native resources, window fitting and process cleanup
+        shell: pwsh
+        timeout-minutes: 5
+        run: |
+          $env:RALLYCUT_TEST_EXE = (Resolve-Path "build/release/RallyCut-$env:VERSION-windows-amd64.exe").Path
+          go test -v . ./backend ./backend/childproc -count=1 -timeout 3m
+          if ($LASTEXITCODE -ne 0) { throw 'Packaged native resource or Windows regression test failed' }
       - name: Smoke-test installer, payload and uninstall data preservation
         shell: pwsh
         timeout-minutes: 15

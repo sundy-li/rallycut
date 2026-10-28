@@ -4,6 +4,12 @@ on:
   push:
     tags: ['v*', '!v*-windows.*']
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Prerelease version without v (build only; tags publish)'
+        required: true
+        default: '0.1.0-alpha.3'
+        type: string
 
 permissions:
   contents: write
@@ -13,20 +19,36 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  package:
-    name: Package ${{ matrix.name }}
-    runs-on: ${{ matrix.os }}
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      value: ${{ steps.version.outputs.value }}
+    steps:
+      - id: version
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          python - <<'PY'
+          import os,re
+          version=os.environ['REF_NAME'].removeprefix('v') if os.environ['REF_TYPE']=='tag' else os.environ['INPUT_VERSION']
+          assert re.fullmatch(r'\d+\.\d+\.\d+-[A-Za-z0-9.-]+',version),version
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('value='+version+'\n')
+          PY
+
+  windows:
+    name: Verified Windows installer
+    needs: version
+    uses: ./.github/workflows/windows-preview.yml
+    with:
+      version: ${{ needs.version.outputs.value }}
+
+  macos:
+    name: Package macOS universal
+    needs: version
+    runs-on: macos-latest
     timeout-minutes: 40
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: macOS universal
-            os: macos-latest
-            target: macos
-          - name: Windows amd64
-            os: windows-latest
-            target: windows
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -38,51 +60,67 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - uses: extractions/setup-just@v2
-      - name: Install Wails CLI
-        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
-      - name: Install NSIS
-        if: matrix.target == 'windows'
-        run: choco install nsis -y --no-progress
+      - run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
       - run: npm --prefix frontend ci
       - name: Build package
-        shell: bash
         env:
-          VERSION: ${{ github.ref_name }}
-        run: just package-${{ matrix.target }}
-      - name: Record SHA-256 checksums
-        shell: bash
+          VERSION: ${{ needs.version.outputs.value }}
+        run: just package-macos
+      - name: Verify both production slices, signature and public payload
+        run: |
+          set -euo pipefail
+          app=build/bin/RallyCut.app
+          binary="$app/Contents/MacOS/RallyCut"
+          codesign --verify --deep --strict "$app"
+          lipo -verify_arch arm64 x86_64 "$binary"
+          for arch in arm64 x86_64; do
+            thin="$RUNNER_TEMP/RallyCut-$arch"
+            lipo "$binary" -thin "$arch" -output "$thin"
+            go version -m "$thin" | tee "$RUNNER_TEMP/build-info-$arch.txt"
+            grep -Eq -- '-tags=([^[:space:]]*,)?production(,|[[:space:]]|$)' "$RUNNER_TEMP/build-info-$arch.txt"
+            if grep -Eq -- '-tags=([^[:space:]]*,)?dev(,|[[:space:]]|$)' "$RUNNER_TEMP/build-info-$arch.txt"; then exit 1; fi
+          done
+          if find "$app" -type f | grep -Ei '\.(pt|pth|onnx|mp4|mov|mkv)$'; then
+            echo 'Refusing model weights or source videos in app'; exit 1
+          fi
+      - name: Record SHA-256 checksum
         run: |
           python - <<'PY'
           import hashlib
           from pathlib import Path
-          root = Path('build/release')
-          files = sorted(p for p in root.iterdir() if p.suffix in {'.zip', '.exe'})
-          if not files:
-              raise SystemExit('No release files to checksum')
-          text = ''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n' for p in files)
-          (root / 'SHA256SUMS-${{ matrix.target }}.txt').write_text(text, encoding='utf-8')
+          root=Path('build/release');files=list(root.glob('RallyCut-*-macos-universal.zip'))
+          assert len(files)==1
+          (root/'SHA256SUMS-macos.txt').write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n' for p in files))
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.target }}
+          name: macos
           path: build/release/*
           if-no-files-found: error
 
   publish:
     name: Publish GitHub Release
-    needs: package
+    needs: [version, windows, macos]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
+          name: macos
           path: dist
-          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-preview-${{ needs.version.outputs.value }}
+          path: dist
+      - name: Require exact deliverables and verify checksums
+        env:
+          VERSION: ${{ needs.version.outputs.value }}
+        run: python scripts/verify_release.py dist --version "$VERSION"
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/*
           generate_release_notes: false
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: true
           fail_on_unmatched_files: true
           body_path: docs/releases.zh-CN.md

@@ -43,8 +43,19 @@ test('private beta access and dependency limitations remain visible', async () =
   const html = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
   assert.ok(html.includes(config.releaseUrl));
   assert.ok(html.includes('下载需要 GitHub 仓库权限。'));
-  for (const term of ['Python 3.10+', 'FFmpeg', '正式发布者签名／Apple 公证', '不捆绑模型权重', '不支持匿名下载']) assert.ok(html.includes(term), term);
+  for (const term of ['Windows 完整安装器已含 Python', 'FFmpeg', '约 6 MB', '后续启动跳过准备页', '正式发布者签名／Apple 公证', '不捆绑模型权重', '不支持匿名下载']) assert.ok(html.includes(term), term);
+  assert.equal(html.includes('需自行安装 Python'), false);
+  assert.ok(config.releaseUrl.endsWith(`/v${config.version}`));
   assert.equal(/<script|<iframe|<form/i.test(html), false);
+});
+test('public guides consistently describe the current installer and no retired download links', async () => {
+  for (const filename of htmlFiles) {
+    const html = await fs.readFile(filename, 'utf8');
+    for (const [, tag] of html.matchAll(/github\.com\/sundy-li\/rallycut\/releases\/tag\/([^"<\s]+)/g)) {
+      assert.equal(tag, `v${config.version}`, filename);
+    }
+    assert.equal(/尚未重新发布安装包|需自行安装 Python 3\.10/.test(html), false, filename);
+  }
 });
 test('site has no private runtime artifacts, local source paths or unresolved markdown links', async () => {
   for (const filename of htmlFiles) {

@@ -4,42 +4,31 @@
 
 既可以让机器先分析，也可以自己手动剪；更推荐两者结合：机器找出候选回合，你修正不准确的地方，最后选择合适的覆盖方式导出。
 
-[先看主界面操作](https://rallycut-byc.pages.dev/#workbench) · [再看导出效果](https://rallycut-byc.pages.dev/#demo) · [下载安装包](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.2)
+[先看主界面操作](https://rallycut-byc.pages.dev/#workbench) · [再看导出效果](https://rallycut-byc.pages.dev/#demo) · [下载安装包](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3)
 
 ## 1. 下载并安装
 
 当前为私有种子测试。先接受维护者的 GitHub 邀请，再登录被邀请的账号下载；没有权限时，下载链接会显示 404。国内访问不便时，可向维护者索取同版本安装包及 SHA-256 校验值；不要把源码下载包当安装包。
 
-- **macOS**：下载 `RallyCut-0.1.0-alpha.2-macos-universal.zip`，解压后将 `RallyCut.app` 拖到“应用程序”。Apple Silicon 是主要测试平台，Intel Mac 仍需进一步实机验证。
-- **Windows（实验性）**：有 `-setup.exe` 时使用安装器，否则使用同版本 `-windows-amd64.exe`。Windows 真机体验尚未完成同等验证，需要 WebView2 运行时。
+- **macOS**：下载 `RallyCut-0.1.0-alpha.3-macos-universal.zip`，解压后将 `RallyCut.app` 拖到“应用程序”。Apple Silicon 是主要测试平台，Intel Mac 仍需进一步实机验证。
+- **Windows（实验性）**：首选 `RallyCut-0.1.0-alpha.3-windows-amd64-setup.exe`，中文、按当前用户安装，已包含私有 Python、FFmpeg 和分析依赖。需要 WebView2；缺少时先显示原生安装确认。免安装备用需同时下载同版 EXE 与 `RallyCut-runtime-windows-amd64.zip` 并放在同一目录，不要只拷贝 EXE。
+- **Windows 11 ARM**：使用的仍是上述 x64 包，通过系统模拟运行，不是原生 ARM64；模拟性能、原生窗口与 `\\Mac\Home` 共享盘仍需实测。
+
+升级前退出旧窗口、备份项目再安装；不用删除旧数据目录，不要移动原片。历史版本下载入口撤下后，统一使用本版 Release。
 
 安装包尚未完成正式发布者签名／Apple 公证。确认来源后按系统提示打开；遇到安全提示且拿不准时联系维护者，**不要关闭系统整体安全保护**。版本页面同时提供 SHA-256 校验清单。
 
 ## 2. 完成首次准备
 
-**新流程（源码已实现，尚未重新发布安装包）**：打开后先自动检测，缺少环境时点击“开始准备环境”，程序按当前 Windows / macOS 下载 Python、视频工具、分析依赖和模型，并显示阶段进度；全部自检通过才进入项目列表。失败可以重试或重新检测，不会绕过环境准备进入剪辑界面。不改系统 Python 或全局 PATH。首次需联网并预留空间，国内网络还需能访问对应下载源。
+**本版不要求自行安装 Python、FFmpeg 或 PyTorch，也不用手动修改 PATH。** 打开先本地检测，缺少内容时等你明确点击才下载；全部自检通过才进入项目列表，失败可重试，不会绕过准备进入剪辑。
 
-**以下仍适用于当前下载的 `v0.1.0-alpha.2`**，请勿把源码的新功能当作旧包已经具备：
+- **Windows 完整安装器**：安装时已经展开运行环境，不应在首次打开时重新下载依赖或执行 pip。缺模型时点击“下载模型并开始使用（约 6 MB）”，完成固定哈希校验和真实模型自检。建议预留至少 5 GB 空间，ARM 模拟下加载可能较慢。
+- **Windows 免安装备用**：EXE 会使用同目录的运行环境 ZIP，首次校验并展开到独立目录；它不等同于完整安装器的安装时展开路径。模型仍单独准备。
+- **macOS**：缺环境时点击“开始准备环境”，按平台下载私有 Python、视频工具、分析依赖和模型，显示真实阶段进度；不替换系统 Python。
 
-当前还不是完全免依赖的安装包：需要本机 **Python 3.10+（推荐 3.12，带 venv）、FFmpeg 和 FFprobe**。不会安装的用户可请维护者协助。
+首次下载需联网且下载源可达。依赖和模型齐全后，视频分析、编辑与导出都在本机进行；耗时和空间随平台变化，不能只按安装包大小预估。
 
-macOS 已安装 Homebrew 的用户可以运行：
-
-```bash
-brew install python@3.12 ffmpeg
-```
-
-Windows 安装 Python 时勾选加入 PATH，并把 FFmpeg 的 `bin` 目录加入 PATH。重新打开终端，确认以下命令都有版本信息：
-
-```text
-python --version
-ffmpeg -version
-ffprobe -version
-```
-
-macOS 的 Python 命令通常是 `python3.12`，而不是 `python`。
-
-第一次打开应用需要联网安装运行环境和下载模型，请等待准备完成。耗时和磁盘占用取决于网络与平台，不能只按安装包大小预估。准备完成后，比赛视频的分析、编辑和导出都在本机进行。
+**Windows 后续启动**：同一环境首次完整自检成功后，关闭再打开，应直接进入项目列表，不再闪准备页或运行依赖探测；升级、关键文件变化或显式重新检测时会回到完整检查。内部命令不应弹 DOS 窗口。不要删除项目或数据目录来测试首启，优先使用干净虚拟机快照。
 
 ## 3. 从一段短视频开始
 
