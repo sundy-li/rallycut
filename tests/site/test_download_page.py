@@ -8,6 +8,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 import io
+import json
 import os
 import re
 import tempfile
@@ -155,7 +156,9 @@ def main():
             page.screenshot(path=str(ARTIFACTS / 'desktop.png'), full_page=True)
             page.get_by_role('link', name='下载种子版', exact=True).click()
             assert page.evaluate('location.hash') == '#download'
-            assert '/v0.1.0-alpha.2' in page.locator('.release-link').get_attribute('href')
+            config = json.loads((ROOT / 'site/release.json').read_text())
+            assert page.locator('.release-link').get_attribute('href') == config['releaseUrl']
+            assert config['releaseUrl'].endswith('/v' + config['version'])
             page.set_viewport_size({'width': 390, 'height': 844})
             page.goto(base, wait_until='networkidle')
             page.screenshot(path=str(ARTIFACTS / 'mobile.png'), full_page=True)
