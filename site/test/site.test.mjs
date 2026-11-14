@@ -201,3 +201,13 @@ test('English README mirrors the Chinese README demo order and links', async () 
   assert.ok(/<details>\s*<summary>More:[\s\S]*rallycut-preview\.gif[\s\S]*<\/details>/.test(readme));
   for (const doc of ['getting-started', 'faq', 'releases']) assert.ok(readme.includes(`docs/${doc}.en.md`), doc);
 });
+test('every page header links to the public GitHub repository', async () => {
+  for (const filename of htmlFiles) {
+    if (filename.endsWith('404.html')) continue;
+    const html = await fs.readFile(filename, 'utf8');
+    const header = html.match(/<header class="site-header">[\s\S]*?<\/header>/)?.[0] || '';
+    const link = header.match(/<a class="nav-link nav-github" href="([^"]+)" target="_blank" rel="noopener noreferrer" aria-label="[^"]+">/);
+    assert.ok(link, `${filename}: missing GitHub link`);
+    assert.equal(link[1], config.repository, filename);
+  }
+});
