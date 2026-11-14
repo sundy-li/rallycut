@@ -6,8 +6,9 @@
 
 - GitHub：`sundy-li/rallycut`，**public**；源码、文档和 Release 安装包可匿名浏览／下载，无需邀请。
 - 当前统一版本：`v0.1.0-alpha.3`，预发布；同一个 Release 提供 macOS 通用包与 Windows 完整安装器／免安装包，历史 Release 在新版验证后撤下。以标签成功构建的实际 Assets 为准。
-- 免费网站：**https://rallycut-byc.pages.dev/**，中文指南：**https://rallycut-byc.pages.dev/guide/**。
-- Cloudflare Pages 项目名是 `rallycut`，不是 `rallycut-byc`；平台分配的访问域名带后缀，部署仍使用 `--project-name rallycut`。
+- 免费网站：**https://rallycut-app.pages.dev/**，中文指南 **/guide/**，英文首页 **/en/**、英文指南 **/en/guide/**。
+- Cloudflare Pages 项目名是 `rallycut-app`，部署使用 `--project-name rallycut-app`。`rallycut.pages.dev` 已被其他账户占用（2026-11 检查时是一个排球站点），无法申请。
+- 旧项目 `rallycut`（`rallycut-byc.pages.dev`）保留旧部署，不再更新；已经发出的旧链接仍可打开，但内容停在旧版。需要时可另行给旧项目部署跳转页。
 - 网站 Direct Upload，不会因 GitHub push 自动更新。构建额度与收费按平台当前条款，不默认无限免费。
 
 ## v0.1.0-alpha.3 发布结果（2026-10-28）
@@ -27,9 +28,9 @@ GitHub 仓库与 Release 已公开，用户无需邀请或登录即可浏览源�
 
 ## 站点内容
 
-`site/build.mjs` 只转换固定允许列表：`docs/README.md`、`getting-started.zh-CN.md`、`faq.zh-CN.md`、`releases.zh-CN.md`。技术报告与开发者文档不复制到 Pages，通过链接在公开 GitHub 仓库浏览，无需仓库权限。
+`site/build.mjs` 只转换固定允许列表：中文 `docs/README.md`、`getting-started.zh-CN.md`、`faq.zh-CN.md`、`releases.zh-CN.md`，以及对应英文 `README.en.md`、`getting-started.en.md`、`faq.en.md`、`releases.en.md`。技术报告与开发者文档不复制到 Pages，通过链接在公开 GitHub 仓库浏览，无需仓库权限。
 
-网站当前统一使用中文（包括首页、文档导航、视频说明和 404），暂不提供语言切换；RallyCut 与必要技术名称保留原名。
+网站提供中英文两套页面：中文在 `/`、`/guide/`，英文在 `/en/`、`/en/guide/`；每页顶部的语言按钮跳到另一语言的同名页面，404 页中英双语。中文首页模板是 `site/public/index.html`，英文是 `site/public/en/index.html`，修改一种语言时要同步另一种。应用界面目前只有中文，英文指南用“英文名（中文按钮名）”对照。改中文用户文档时同步更新英文版，测试会检查两种语言页面互相链接。
 
 用户已明确批准以下产品展示资源进入 Git 和公开页面：30 秒内导出演示、用户提供的真实工作台录屏，以及两者的预览 GIF 与封面。
 
@@ -85,7 +86,7 @@ cd site
 npm ci
 npm run build
 npm test
-npx wrangler pages deploy dist --project-name rallycut --branch main
+npx wrangler pages deploy dist --project-name rallycut-app --branch main
 ```
 
 **只部署 `site/dist`，不能部署仓库根目录或整个 `docs`。** 当前不配置 GitHub → Cloudflare 自动部署 secrets。CSP 仅允许本站静态样式、图像和视频，不为视频播放开放内联脚本或 `unsafe-eval`。
@@ -97,7 +98,7 @@ npx wrangler pages deploy dist --project-name rallycut --branch main
 uv run --with playwright python tests/site/test_download_page.py
 ```
 
-测试覆盖 320 / 375 / 390 / 768 / 1024 / 1440px：首页与四篇指南无横向溢出，真实视频在生产 CSP 下解码、播放、跳转，下载入口和键盘跳转正文可用。截图只保存在系统临时目录，不提交。Node 测试另检查允许列表、链接、版本、README 长度、资源体积、私有权限提示，以及主界面录屏位于首屏、导出集锦位于后续区域的展示顺序。
+测试覆盖 320 / 375 / 390 / 768 / 1024 / 1440px：中英文首页与各四篇指南无横向溢出、语言切换可用，真实视频在生产 CSP 下解码、播放、跳转，下载入口和键盘跳转正文可用。截图只保存在系统临时目录，不提交。Node 测试另检查允许列表、链接、版本、README 长度、资源体积、私有权限提示，以及主界面录屏位于首屏、导出集锦位于后续区域的展示顺序。
 
 ## 新版验收后再清理旧版
 
@@ -124,7 +125,7 @@ Release 附件删除不可直接撤销；Git refs 备份只保留源码定位，
 - 最新源码在包中，Go / Python 运行时资源清单完整，默认测试不依赖用户私有素材。
 - 安装包及校验清单齐全；没有模型、原片、项目、运行日志或凭据。
 - macOS `codesign --verify --deep --strict`、`lipo -archs` 和 production 构建信息通过；ad-hoc 不是 Apple 公证。
-- 首页、四篇指南、MP4、GIF 与封面返回 200，未知路径、`/.git/config`、模型路径返回 404，视频 MIME 和 Range 响应可用。
+- 中英文首页、各四篇指南、MP4、GIF 与封面返回 200，未知路径、`/.git/config`、模型路径返回 404，视频 MIME 和 Range 响应可用。
 - 页面明确说明公开下载无需邀请或登录，同时没有声称 Windows ARM、Intel Mac 或全新机器已经实机验收。
 - 旧版只在新版可用后删除；Pages 链接与 README 指向同一新版。
 

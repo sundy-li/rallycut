@@ -1,5 +1,7 @@
 # RallyCut 使用指南
 
+中文 · [English](README.en.md)
+
 **机器先找回合，人工把关修正，最后导出你的乒乓球集锦。**
 
 RallyCut 支持三种用法：让机器分析回合、自己手动剪辑，或把两者结合。机器哪里剪得不对，就手动调整起止点、补上漏掉的回合；导出时再选择采用哪一份。
@@ -8,7 +10,7 @@ RallyCut 支持三种用法：让机器分析回合、自己手动剪辑，或�
 
 如果只想自己剪，也可以导入视频后直接标记回合，不必先运行分析。
 
-[看软件如何拆回合](https://rallycut-byc.pages.dev/#workbench) · [看导出效果](https://rallycut-byc.pages.dev/#demo) · [下载种子版](https://rallycut-byc.pages.dev/#download)
+[看软件如何拆回合](https://rallycut-app.pages.dev/#workbench) · [看导出效果](https://rallycut-app.pages.dev/#demo) · [下载种子版](https://rallycut-app.pages.dev/#download)
 
 ## 从这里开始
 

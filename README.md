@@ -1,19 +1,21 @@
 # RallyCut
 
+中文 · [English](README.en.md)
+
 **让每个好球，留下来。** 把整场乒乓球视频，剪成值得回看的回合集锦。
 
-[下载种子版](https://rallycut-byc.pages.dev/#download) · [看软件界面](https://rallycut-byc.pages.dev/#workbench) · [看导出效果](https://rallycut-byc.pages.dev/#demo) · [中文指南](https://rallycut-byc.pages.dev/guide/)
+[下载种子版](https://rallycut-app.pages.dev/#download) · [看软件界面](https://rallycut-app.pages.dev/#workbench) · [看导出效果](https://rallycut-app.pages.dev/#demo) · [中文指南](https://rallycut-app.pages.dev/guide/)
 
 ## 先看主界面：回合怎么拆
 
-[![RallyCut 真实操作录屏：回放原片、查看回合列表与时间轴](site/public/media/rallycut-workbench-preview.gif)](https://rallycut-byc.pages.dev/#workbench)
+[![RallyCut 真实操作录屏：回放原片、查看回合列表与时间轴](site/public/media/rallycut-workbench-preview.gif)](https://rallycut-app.pages.dev/#workbench)
 
 **右侧逐个看回合，底部总览整场。** 点击动图观看约 19 秒的真实操作录屏（已剪去开头 1 秒，无音轨）。点击回合回放，复核或调整起止点，勾选想保留的片段，再导出集锦。
 
 <details>
 <summary>补充演示：再看导出后的效果</summary>
 
-[![RallyCut 实际导出：乒乓球轨迹与回合编号](site/public/media/rallycut-preview.gif)](https://rallycut-byc.pages.dev/#demo)
+[![RallyCut 实际导出：乒乓球轨迹与回合编号](site/public/media/rallycut-preview.gif)](https://rallycut-app.pages.dev/#demo)
 
 *樊振东比赛素材的实际导出片段：橙色线条跟随球的轨迹，左上角显示回合编号。完整演示带原声，点击观看。*
 

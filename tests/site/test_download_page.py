@@ -1,4 +1,4 @@
-"""Browser QA of the Chinese site and both real videos; no desktop app/private projects.
+"""Browser QA of the Chinese and English site and both real videos; no desktop app/private projects.
 After `npm --prefix site run build`:
   uv run --with playwright python tests/site/test_download_page.py
 Set RALLYCUT_SITE_URL to test a deployed site. Screenshots remain in system temp.
@@ -124,16 +124,17 @@ def main():
             browser = pw.chromium.launch(headless=True)
             page = browser.new_page(locale='zh-CN')
             page.on('pageerror', lambda e: errors.append(str(e)))
-            routes = ['/', '/guide/', '/guide/getting-started.html', '/guide/faq.html', '/guide/releases.html']
+            guides = ['/guide/', '/guide/getting-started.html', '/guide/faq.html', '/guide/releases.html']
+            routes = [('/', 'zh-CN')] + [(r, 'zh-CN') for r in guides] + [('/en/', 'en')] + [('/en' + r, 'en') for r in guides]
             for width in [320, 375, 390, 768, 1024, 1440]:
                 page.set_viewport_size({'width': width, 'height': 1000})
-                for route in routes:
+                for route, lang in routes:
                     response = page.goto(base + route, wait_until='networkidle')
                     assert response.status == 200, (width, route, response.status)
                     assert 'media-src' in response.headers['content-security-policy']
-                    assert page.locator('html').get_attribute('lang') == 'zh-CN'
+                    assert page.locator('html').get_attribute('lang') == lang, (route, lang)
                     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), (width, route, 'overflow')
-                print(f'PASS: {width}px, Chinese landing + four guides')
+                print(f'PASS: {width}px, Chinese and English landing + four guides each')
             page.set_viewport_size({'width': 1440, 'height': 1000})
             page.goto(base, wait_until='networkidle')
             assert page.locator('video').first.get_attribute('id') == 'workbench-video'
@@ -166,9 +167,18 @@ def main():
             assert page.locator('.skip-link').evaluate('(a) => document.activeElement === a')
             page.keyboard.press('Enter')
             assert page.evaluate('location.hash') == '#main'
+            page.locator('.site-header .lang-switch').click()
+            page.wait_for_load_state('networkidle')
+            assert urlsplit(page.url).path == '/en/', page.url
+            assert page.locator('html').get_attribute('lang') == 'en'
+            page.goto(base + '/en/guide/faq.html', wait_until='networkidle')
+            page.locator('.site-header .lang-switch').click()
+            page.wait_for_load_state('networkidle')
+            # Cloudflare Pages redirects *.html to the extensionless path.
+            assert urlsplit(page.url).path in {'/guide/faq.html', '/guide/faq'}, page.url
             assert not errors, errors
             browser.close()
-            print('PASS: Chinese navigation, both videos play and seek precisely, mobile layout, keyboard and no page errors')
+            print('PASS: Chinese/English navigation and language switch, both videos play and seek precisely, mobile layout, keyboard and no page errors')
             print(f'Artifacts: {ARTIFACTS}')
     finally:
         if server:

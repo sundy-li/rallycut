@@ -1,10 +1,12 @@
 # 安装与快速开始
 
+中文 · [English](getting-started.en.md)
+
 用 RallyCut 做三件事：**找到回合、看清轨迹、导出集锦。**
 
 既可以让机器先分析，也可以自己手动剪；更推荐两者结合：机器找出候选回合，你修正不准确的地方，最后选择合适的覆盖方式导出。
 
-[先看主界面操作](https://rallycut-byc.pages.dev/#workbench) · [再看导出效果](https://rallycut-byc.pages.dev/#demo) · [下载安装包](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3)
+[先看主界面操作](https://rallycut-app.pages.dev/#workbench) · [再看导出效果](https://rallycut-app.pages.dev/#demo) · [下载安装包](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3)
 
 ## 1. 下载并安装
 

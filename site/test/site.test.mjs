@@ -52,10 +52,11 @@ function gifDurationMs(data) {
 }
 const output = await files(dist);
 const htmlFiles = output.filter(f => f.endsWith('.html'));
+const isEnglish = (filename) => path.relative(dist, filename).startsWith(`en${path.sep}`);
 
 test('only explicitly public pages and static assets are built', () => {
   const relative = output.map(f => path.relative(dist, f)).sort();
-  assert.deepEqual(relative, ['404.html', '_headers', '_routes.json', 'guide/faq.html', 'guide/getting-started.html', 'guide/index.html', 'guide/releases.html', 'icon.svg', 'index.html', 'media/rallycut-demo.mp4', 'media/rallycut-poster.jpg', 'media/rallycut-preview.gif', 'media/rallycut-workbench-poster.webp', 'media/rallycut-workbench-preview.gif', 'media/rallycut-workbench.mp4', 'robots.txt', 'styles.css']);
+  assert.deepEqual(relative, ['404.html', '_headers', '_routes.json', 'en/guide/faq.html', 'en/guide/getting-started.html', 'en/guide/index.html', 'en/guide/releases.html', 'en/index.html', 'guide/faq.html', 'guide/getting-started.html', 'guide/index.html', 'guide/releases.html', 'icon.svg', 'index.html', 'media/rallycut-demo.mp4', 'media/rallycut-poster.jpg', 'media/rallycut-preview.gif', 'media/rallycut-workbench-poster.webp', 'media/rallycut-workbench-preview.gif', 'media/rallycut-workbench.mp4', 'robots.txt', 'styles.css']);
 });
 test('all local URLs resolve to a file and fragments resolve to an ID', async () => {
   for (const filename of htmlFiles) {
@@ -102,8 +103,13 @@ test('site has no private runtime artifacts, local source paths or unresolved ma
     assert.equal(/\/Users\/|github_pat_|ghp_[A-Za-z0-9]+|<script/i.test(html), false, filename);
     assert.equal(/href="(?!https?:)[^"]+\.md"/.test(html), false, filename);
     assert.ok(html.includes('name="viewport"'));
-    assert.ok(html.includes('<html lang="zh-CN">'));
-    assert.equal(/SEED PREVIEW|Inside the app|Get the seed preview|Skip to content|GUIDE|Page not found|Your browser does not support/.test(html), false, filename);
+    if (isEnglish(filename)) {
+      assert.ok(html.includes('<html lang="en">'), filename);
+      assert.equal(/跳转到正文|下载种子版|使用指南<|种子测试版/.test(html), false, filename);
+    } else {
+      assert.ok(html.includes('<html lang="zh-CN">'), filename);
+      if (!filename.endsWith('404.html')) assert.equal(/SEED PREVIEW|Inside the app|Get the seed preview|Skip to content|GUIDE|Page not found|Your browser does not support/.test(html), false, filename);
+    }
   }
 });
 test('CSP restricts the static site and excludes inline scripts', async () => {
@@ -160,4 +166,38 @@ test('trimmed workbench recording replaces the screenshot without replacing the 
   const poster = await fs.readFile(path.join(dist, 'media/rallycut-workbench-poster.webp'));
   assert.equal(poster.toString('ascii', 0, 4), 'RIFF');
   assert.equal(poster.toString('ascii', 8, 12), 'WEBP');
+});
+test('every page links to its counterpart in the other language', async () => {
+  for (const filename of htmlFiles) {
+    const relative = path.relative(dist, filename).split(path.sep).join('/');
+    if (relative === '404.html') continue;
+    const html = await fs.readFile(filename, 'utf8');
+    const switcher = html.match(/<a class="nav-link lang-switch" href="([^"]+)"/);
+    assert.ok(switcher, `${relative}: missing language switch`);
+    const counterpart = isEnglish(filename) ? `/${relative.slice(3)}` : `/en/${relative}`;
+    assert.equal(switcher[1], counterpart.replace(/index\.html$/, ''), relative);
+    assert.ok(html.includes('hreflang="en"') && html.includes('hreflang="zh-CN"'), relative);
+  }
+});
+test('English landing keeps the same downloads, limits and demo order', async () => {
+  const html = await fs.readFile(path.join(dist, 'en/index.html'), 'utf8');
+  assert.ok(html.includes(config.releaseUrl));
+  assert.ok(html.includes(`v${config.version}`));
+  for (const term of ['Source code and installers are public.', 'without an invitation or GitHub sign-in', 'already includes Python, FFmpeg', 'about 6 MB', 'skip the setup page', 'notarized by Apple', "don't bundle model weights", 'interface is currently in Chinese']) assert.ok(html.includes(term), term);
+  assert.equal(/<script|<iframe|<form/i.test(html), false);
+  assert.ok(html.indexOf('id="workbench-video"') < html.indexOf('id="export-demo-video"'));
+  const hero = html.match(/<section class="hero"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.ok(hero.includes('id="workbench-video"'));
+  assert.equal((html.match(/controls playsinline preload="none"/g) || []).length, 2);
+});
+test('English README mirrors the Chinese README demo order and links', async () => {
+  const readme = await fs.readFile(new URL('../../README.en.md', import.meta.url), 'utf8');
+  const zh = await fs.readFile(new URL('../../README.md', import.meta.url), 'utf8');
+  assert.ok(zh.includes('[English](README.en.md)'));
+  assert.ok(readme.includes('[中文](README.md)'));
+  assert.ok(readme.split('\n').length <= 50);
+  assert.ok(readme.includes(config.releaseUrl));
+  assert.ok(readme.indexOf('rallycut-workbench-preview.gif') < readme.indexOf('rallycut-preview.gif'));
+  assert.ok(/<details>\s*<summary>More:[\s\S]*rallycut-preview\.gif[\s\S]*<\/details>/.test(readme));
+  for (const doc of ['getting-started', 'faq', 'releases']) assert.ok(readme.includes(`docs/${doc}.en.md`), doc);
 });

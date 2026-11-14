@@ -3,5 +3,6 @@
   "channel": "种子测试 · 预览版",
   "repository": "https://github.com/sundy-li/rallycut",
   "releaseUrl": "https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3",
-  "macosFilename": "RallyCut-0.1.0-alpha.3-macos-universal.zip"
+  "macosFilename": "RallyCut-0.1.0-alpha.3-macos-universal.zip",
+  "channelEn": "Seed preview · Pre-release"
 }

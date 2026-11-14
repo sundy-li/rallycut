@@ -56,3 +56,6 @@ models/weights/
 .wrangler/
 site/node_modules/
 site/dist/
+
+# Local Xiaohongshu drafts derived from approved showcase media; not committed.
+build/xiaohongshu/
