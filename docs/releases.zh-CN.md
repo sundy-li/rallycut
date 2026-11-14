@@ -2,9 +2,20 @@
 
 中文 · [English](releases.en.md)
 
-## v0.1.0-alpha.3 · 安装与 Windows 体验更新
+## v0.1.0-alpha.4 · 中英文文档与公开下载
 
-[打开本版 GitHub Release](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3)。本版统一提供 **macOS 通用包、Windows x64 完整安装器和免安装备用包**，附 SHA-256 校验清单。仓库和安装包已公开，无需邀请或登录即可下载；网站只提供下载入口，不托管原片或项目。
+[打开本版 GitHub Release](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.4)。本版统一提供 **macOS 通用包、Windows x64 完整安装器和免安装备用包**，附 SHA-256 校验清单。仓库和安装包已公开，无需邀请或登录即可下载；网站只提供下载入口，不托管原片或项目。
+
+### 本版变化
+
+- **剪辑和分析功能与 v0.1.0-alpha.3 相同**，本版主要更新文档和下载入口；已在用 alpha.3 的项目可以直接继续用。
+- **英文使用指南**：安装、快速开始、常见问题和本版更新都有英文版，按“英文名（中文按钮名）”对照界面。应用界面目前仍只有中文。
+- **新网站地址**：https://rallycut-app.pages.dev/ ，英文版在 `/en/`。顶部导航可切换中英文，并直达 GitHub 仓库。旧地址 `rallycut-byc.pages.dev` 不再更新。
+- **源码与安装包公开**：GitHub 仓库已改为公开，浏览源码和下载安装包都不需要邀请或登录。
+- **中文文档精简**：更新说明和常见问题去掉了工程术语，改成直接的使用说明。
+- **Windows 升级后检查一次环境**：运行环境标识随版本更新，从 alpha.3 升级后第一次打开会完整检查一次，之后照常直接进入项目列表。
+
+以下是 v0.1.0-alpha.3 起就有、本版继续保留的内容。
 
 ### 安装与启动
 
@@ -32,16 +43,16 @@
 
 | 系统／用途 | 附件 |
 | --- | --- |
-| macOS Apple Silicon／Intel | `RallyCut-0.1.0-alpha.3-macos-universal.zip` |
-| Windows 首选 | `RallyCut-0.1.0-alpha.3-windows-amd64-setup.exe` |
-| Windows 免安装备用 | `RallyCut-0.1.0-alpha.3-windows-amd64.exe`，同时下载 `RallyCut-runtime-windows-amd64.zip` 放在 EXE 同目录 |
+| macOS Apple Silicon／Intel | `RallyCut-0.1.0-alpha.4-macos-universal.zip` |
+| Windows 首选 | `RallyCut-0.1.0-alpha.4-windows-amd64-setup.exe` |
+| Windows 免安装备用 | `RallyCut-0.1.0-alpha.4-windows-amd64.exe`，同时下载 `RallyCut-runtime-windows-amd64.zip` 放在 EXE 同目录 |
 | 文件校验 | `SHA256SUMS-macos.txt`、`SHA256SUMS-windows.txt`；`runtime-bundle.json` 是运行环境清单 |
 
-先退出旧软件、备份项目，再安装或替换应用；**不用卸载或删除用户数据目录**。保留原视频的名称与路径，先用短素材试用，再继续重要项目。历史版本的下载已统一撤下，旧链接不再可用；用户项目和视频不受影响。
+先退出旧软件、备份项目，再安装或替换应用；**不用卸载或删除用户数据目录**。保留原视频的名称与路径，先用短素材试用，再继续重要项目。更早的测试版下载已撤下，旧链接不再可用；用户项目和视频不受影响。
 
 ### 已验证与尚未验证
 
-发布前在 macOS 和 Windows x64 的自动化环境中检查了安装／卸载、模型真实运行、中文路径导入、预览、导出和重复启动，以本版 Release 的构建结果为准。
+每次发布前都在 macOS 和 Windows x64 的自动化环境中检查安装／卸载、模型真实运行、中文路径导入、预览、导出和重复启动，以本版 Release 的构建结果为准。
 
 尚未实机验收：Windows 11 ARM 虚拟机、原生文件选择框点击、Mac 共享盘（`\\Mac\Home`）、多显示器操作和 Intel Mac。Windows 包是 x64，在 ARM 上靠系统模拟运行，不承诺加速效果。安装包尚未正式签名／Apple 公证，系统拦截时请先确认来源，不要关闭系统安全保护。模型的再分发／商用条款仍在确认。
 

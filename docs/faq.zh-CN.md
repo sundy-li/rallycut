@@ -4,7 +4,7 @@
 
 ## 下载链接为什么显示 404？
 
-仓库和 Release 安装包已公开，无需邀请或登录。请从[当前版本](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3)的 Assets 下载；历史 Release 已撤下，旧版本或错误文件名的链接会返回 404。若当前入口仍打不开，请检查网络后通过 [GitHub Issues](https://github.com/sundy-li/rallycut/issues) 反馈链接和错误信息，不要发送账号密码或访问令牌。
+仓库和 Release 安装包已公开，无需邀请或登录。请从[当前版本](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.4)的 Assets 下载；历史 Release 已撤下，旧版本或错误文件名的链接会返回 404。若当前入口仍打不开，请检查网络后通过 [GitHub Issues](https://github.com/sundy-li/rallycut/issues) 反馈链接和错误信息，不要发送账号密码或访问令牌。
 
 ## 国内打不开下载页或 GitHub，怎么办？
 
@@ -16,7 +16,7 @@
 
 ## 新版会自动安装环境吗？
 
-`v0.1.0-alpha.3` 已包含首次准备流程。先本地检测，缺少内容时等你明确点击才下载；准备失败可重试，未就绪不能进入剪辑。Windows 完整安装器通常只需补模型，macOS 按平台准备私有环境；不修改系统 Python 或全局 PATH。
+`v0.1.0-alpha.4` 已包含首次准备流程。先本地检测，缺少内容时等你明确点击才下载；准备失败可重试，未就绪不能进入剪辑。Windows 完整安装器通常只需补模型，macOS 按平台准备私有环境；不修改系统 Python 或全局 PATH。
 
 ## 当前安装包找不到 Python、FFmpeg 或 FFprobe 怎么办？
 

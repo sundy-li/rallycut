@@ -2,9 +2,20 @@
 
 [中文](releases.zh-CN.md) · English
 
-## v0.1.0-alpha.3 · Installation and Windows improvements
+## v0.1.0-alpha.4 · English docs and public downloads
 
-[Open this GitHub release](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3). This release ships **a macOS universal package, a full Windows x64 installer and a portable Windows fallback**, with SHA-256 checksum lists. The repository and installers are public and can be downloaded without an invitation or sign-in. The website only links to the download; it doesn't host source videos or projects.
+[Open this GitHub release](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.4). This release ships **a macOS universal package, a full Windows x64 installer and a portable Windows fallback**, with SHA-256 checksum lists. The repository and installers are public and can be downloaded without an invitation or sign-in. The website only links to the download; it doesn't host source videos or projects.
+
+### What's new
+
+- **Editing and analysis are the same as v0.1.0-alpha.3.** This release mainly updates the documentation and download pages; projects from alpha.3 keep working.
+- **English user guides**: install, quick start, FAQ and release notes are now in English, naming each button in English followed by its Chinese label. The app interface itself is still Chinese only.
+- **New website address**: https://rallycut-app.pages.dev/ , with English at `/en/`. The top navigation switches language and links to the GitHub repository. The old address `rallycut-byc.pages.dev` is no longer updated.
+- **Public source and installers**: the GitHub repository is now public; browsing the source and downloading installers need no invitation or sign-in.
+- **Simpler Chinese guides**: the Chinese release notes and FAQ drop engineering jargon in favour of plain instructions.
+- **One environment check after upgrading on Windows**: the runtime identifier changes with the version, so the first launch after upgrading from alpha.3 runs a full check once; later launches go straight to the project list again.
+
+Everything below has been available since v0.1.0-alpha.3 and is unchanged.
 
 ### Installation and launch
 
@@ -32,16 +43,16 @@
 
 | System / use | File |
 | --- | --- |
-| macOS Apple Silicon / Intel | `RallyCut-0.1.0-alpha.3-macos-universal.zip` |
-| Windows (recommended) | `RallyCut-0.1.0-alpha.3-windows-amd64-setup.exe` |
-| Windows portable fallback | `RallyCut-0.1.0-alpha.3-windows-amd64.exe`, plus `RallyCut-runtime-windows-amd64.zip` in the same folder as the EXE |
+| macOS Apple Silicon / Intel | `RallyCut-0.1.0-alpha.4-macos-universal.zip` |
+| Windows (recommended) | `RallyCut-0.1.0-alpha.4-windows-amd64-setup.exe` |
+| Windows portable fallback | `RallyCut-0.1.0-alpha.4-windows-amd64.exe`, plus `RallyCut-runtime-windows-amd64.zip` in the same folder as the EXE |
 | Checksums | `SHA256SUMS-macos.txt`, `SHA256SUMS-windows.txt`; `runtime-bundle.json` lists the runtime contents |
 
-Quit the old app and back up your projects before installing or replacing it. **You don't need to uninstall or delete the user data folder.** Keep your source videos' names and paths, and try a short clip before returning to important projects. Downloads of older versions have been withdrawn and old links no longer work; user projects and videos are unaffected.
+Quit the old app and back up your projects before installing or replacing it. **You don't need to uninstall or delete the user data folder.** Keep your source videos' names and paths, and try a short clip before returning to important projects. Downloads of earlier test builds have been withdrawn and their links no longer work; user projects and videos are unaffected.
 
 ### Tested and not yet tested
 
-Before release, installation and uninstallation, a real model run, importing Chinese paths, preview, export and repeated launches were checked in automated macOS and Windows x64 environments. The build results on this release are the reference.
+Before every release, installation and uninstallation, a real model run, importing Chinese paths, preview, export and repeated launches are checked in automated macOS and Windows x64 environments. The build results on this release are the reference.
 
 Not yet tested on real hardware: Windows 11 on ARM virtual machines, clicking native file dialogs, Mac shared folders (`\\Mac\Home`), multi-monitor use and Intel Macs. The Windows package is x64 and runs under emulation on ARM, with no promise of acceleration. The installers are not yet formally signed or notarized by Apple; if the system blocks them, check the source first and don't turn off system security. Redistribution and commercial-use terms for the model are still being confirmed.
 

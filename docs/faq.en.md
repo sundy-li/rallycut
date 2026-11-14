@@ -4,7 +4,7 @@
 
 ## Why does the download link show 404?
 
-The repository and release installers are public; no invitation or sign-in is needed. Download from the Assets of the [current release](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3). Older releases have been withdrawn, so links to old versions or wrong file names return 404. If the current link still fails, check your network and report the link and error on [GitHub Issues](https://github.com/sundy-li/rallycut/issues). Never send passwords or access tokens.
+The repository and release installers are public; no invitation or sign-in is needed. Download from the Assets of the [current release](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.4). Older releases have been withdrawn, so links to old versions or wrong file names return 404. If the current link still fails, check your network and report the link and error on [GitHub Issues](https://github.com/sundy-li/rallycut/issues). Never send passwords or access tokens.
 
 ## I can't reach the download page or GitHub. What now?
 
@@ -16,7 +16,7 @@ The full Windows installer already contains Python, the video tools and the anal
 
 ## Does the new version set up the environment by itself?
 
-`v0.1.0-alpha.3` includes a first-run setup. It checks locally first and downloads missing parts only after you click to confirm. If setup fails you can retry; you cannot start editing until it is ready. The full Windows installer usually only needs the model; macOS prepares a private environment for your platform. Neither changes your system Python or global PATH.
+`v0.1.0-alpha.4` includes a first-run setup. It checks locally first and downloads missing parts only after you click to confirm. If setup fails you can retry; you cannot start editing until it is ready. The full Windows installer usually only needs the model; macOS prepares a private environment for your platform. Neither changes your system Python or global PATH.
 
 ## The app can't find Python, FFmpeg or FFprobe
 

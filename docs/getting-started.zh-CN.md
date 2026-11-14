@@ -6,14 +6,14 @@
 
 既可以让机器先分析，也可以自己手动剪；更推荐两者结合：机器找出候选回合，你修正不准确的地方，最后选择合适的覆盖方式导出。
 
-[先看主界面操作](https://rallycut-app.pages.dev/#workbench) · [再看导出效果](https://rallycut-app.pages.dev/#demo) · [下载安装包](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3)
+[先看主界面操作](https://rallycut-app.pages.dev/#workbench) · [再看导出效果](https://rallycut-app.pages.dev/#demo) · [下载安装包](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.4)
 
 ## 1. 下载并安装
 
 当前为公开预览版。仓库与 Release 安装包均可直接访问，**无需邀请、仓库权限或登录 GitHub 即可下载**。在 Release 的 Assets 中选择适合系统的安装包，不要把自动生成的源码 ZIP／tar.gz 当安装包。国内访问不便时，可联系维护者获取同版本安装包及 SHA-256 校验值。
 
-- **macOS**：下载 `RallyCut-0.1.0-alpha.3-macos-universal.zip`，解压后将 `RallyCut.app` 拖到“应用程序”。Apple Silicon 是主要测试平台，Intel Mac 仍需进一步实机验证。
-- **Windows（实验性）**：首选 `RallyCut-0.1.0-alpha.3-windows-amd64-setup.exe`，中文、按当前用户安装，已包含私有 Python、FFmpeg 和分析依赖。需要 WebView2；缺少时先显示原生安装确认。免安装备用需同时下载同版 EXE 与 `RallyCut-runtime-windows-amd64.zip` 并放在同一目录，不要只拷贝 EXE。
+- **macOS**：下载 `RallyCut-0.1.0-alpha.4-macos-universal.zip`，解压后将 `RallyCut.app` 拖到“应用程序”。Apple Silicon 是主要测试平台，Intel Mac 仍需进一步实机验证。
+- **Windows（实验性）**：首选 `RallyCut-0.1.0-alpha.4-windows-amd64-setup.exe`，中文、按当前用户安装，已包含私有 Python、FFmpeg 和分析依赖。需要 WebView2；缺少时先显示原生安装确认。免安装备用需同时下载同版 EXE 与 `RallyCut-runtime-windows-amd64.zip` 并放在同一目录，不要只拷贝 EXE。
 - **Windows 11 ARM**：使用的仍是上述 x64 包，通过系统模拟运行，不是原生 ARM64；模拟性能、原生窗口与 `\\Mac\Home` 共享盘仍需实测。
 
 升级前退出旧窗口、备份项目再安装；不用删除旧数据目录，不要移动原片。历史版本下载入口已撤下，请统一使用本版 Release。

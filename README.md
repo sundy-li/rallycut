@@ -30,7 +30,7 @@
 
 ## 开始使用
 
-1. [下载安装包](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3)，按[安装指南](docs/getting-started.zh-CN.md)完成首次准备。
+1. [下载安装包](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.4)，按[安装指南](docs/getting-started.zh-CN.md)完成首次准备。
 2. 新建项目 → 导入视频 → 分析并复核回合。
 3. 在导出栏勾选“球轨迹”“回合编号”，导出你的集锦。
 

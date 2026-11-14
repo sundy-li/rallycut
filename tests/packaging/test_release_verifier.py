@@ -13,7 +13,7 @@ class ReleaseVerifierTests(unittest.TestCase):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         self.root = Path(directory.name)
-        self.version = '0.1.0-alpha.3'
+        self.version = '0.1.0-alpha.4'
         self.mac = [f'RallyCut-{self.version}-macos-universal.zip']
         self.win = [f'RallyCut-{self.version}-windows-amd64.exe',
                     f'RallyCut-{self.version}-windows-amd64-setup.exe',

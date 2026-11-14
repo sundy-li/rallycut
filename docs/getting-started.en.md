@@ -8,14 +8,14 @@ You can let the machine analyze first or cut everything by hand. The recommended
 
 The app interface is currently in Chinese. This guide gives each button in English followed by the Chinese label you will see, for example **Ball trajectory (球轨迹)**.
 
-[Watch the workbench](https://rallycut-app.pages.dev/en/#workbench) · [See an export](https://rallycut-app.pages.dev/en/#demo) · [Download installers](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3)
+[Watch the workbench](https://rallycut-app.pages.dev/en/#workbench) · [See an export](https://rallycut-app.pages.dev/en/#demo) · [Download installers](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.4)
 
 ## 1. Download and install
 
 This is a public preview. The repository and the release installers are public, so **you can download without an invitation, repository access or a GitHub sign-in**. Pick the installer for your system under the release's Assets. The automatically generated source code ZIP / tar.gz is not an installer. If GitHub is hard to reach from your network, ask the maintainer for the same installer and its SHA-256 checksum.
 
-- **macOS**: download `RallyCut-0.1.0-alpha.3-macos-universal.zip`, unzip it and drag `RallyCut.app` to Applications. Apple Silicon is the main test platform; Intel Macs still need hands-on testing.
-- **Windows (experimental)**: prefer `RallyCut-0.1.0-alpha.3-windows-amd64-setup.exe`. It installs for the current user and already contains a private Python, FFmpeg and the analysis dependencies. WebView2 is required; if it is missing, the installer asks before installing it. For the portable fallback, download the EXE of the same version **and** `RallyCut-runtime-windows-amd64.zip` into the same folder. Copying only the EXE does not work.
+- **macOS**: download `RallyCut-0.1.0-alpha.4-macos-universal.zip`, unzip it and drag `RallyCut.app` to Applications. Apple Silicon is the main test platform; Intel Macs still need hands-on testing.
+- **Windows (experimental)**: prefer `RallyCut-0.1.0-alpha.4-windows-amd64-setup.exe`. It installs for the current user and already contains a private Python, FFmpeg and the analysis dependencies. WebView2 is required; if it is missing, the installer asks before installing it. For the portable fallback, download the EXE of the same version **and** `RallyCut-runtime-windows-amd64.zip` into the same folder. Copying only the EXE does not work.
 - **Windows 11 on ARM**: use the same x64 package, which runs under system emulation, not as native ARM64. Emulation speed, native windows and `\\Mac\Home` shared folders have not been tested on real machines yet.
 
 Before upgrading, quit the old app, back up your projects, then install. You do not need to delete the old data folder; do not move your source videos. Downloads of older versions have been withdrawn, so use this release.

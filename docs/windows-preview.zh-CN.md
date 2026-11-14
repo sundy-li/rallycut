@@ -1,13 +1,13 @@
 # Windows 安装与验证说明
 
-当前统一版本：**v0.1.0-alpha.3**。[打开下载页](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.3)。仓库与安装包已公开，无需邀请或登录即可下载。历史 Windows 测试版与旧 macOS 下载已撤下，网站默认入口统一指向本版。
+当前统一版本：**v0.1.0-alpha.4**。[打开下载页](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.4)。仓库与安装包已公开，无需邀请或登录即可下载。历史 Windows 测试版与旧 macOS 下载已撤下，网站默认入口统一指向本版。
 
 这是 Windows x64 包，不是原生 ARM64；Windows 11 ARM 将通过模拟运行。通用用户说明见[安装指南](getting-started.zh-CN.md)，功能与限制见[本版更新](releases.zh-CN.md)。
 
 ## 下载与安装
 
-- **首选完整安装器**：`RallyCut-0.1.0-alpha.3-windows-amd64-setup.exe`。中文、按当前用户安装；安装时已经展开私有 Python、NumPy／OpenCV／PyTorch、FFmpeg／FFprobe 与 app-local Visual C++ 运行库，不在用户电脑执行 pip，不改系统 Python 或全局 PATH。
-- **免安装备用**：`RallyCut-0.1.0-alpha.3-windows-amd64.exe` 与 `RallyCut-runtime-windows-amd64.zip` 放在同目录。首次需校验并展开 ZIP；不要把仅 EXE 的拷贝当完整离线包。
+- **首选完整安装器**：`RallyCut-0.1.0-alpha.4-windows-amd64-setup.exe`。中文、按当前用户安装；安装时已经展开私有 Python、NumPy／OpenCV／PyTorch、FFmpeg／FFprobe 与 app-local Visual C++ 运行库，不在用户电脑执行 pip，不改系统 Python 或全局 PATH。
+- **免安装备用**：`RallyCut-0.1.0-alpha.4-windows-amd64.exe` 与 `RallyCut-runtime-windows-amd64.zip` 放在同目录。首次需校验并展开 ZIP；不要把仅 EXE 的拷贝当完整离线包。
 - **校验**：`SHA256SUMS-windows.txt` 覆盖 Windows 交付文件，`runtime-bundle.json` 固定运行环境的版本、大小与哈希。
 - 模型权重不打包。缺少时明确点击后才单独下载约 6 MB 模型，并按固定哈希校验；已有合格模型可复用。
 - 缺 WebView2 时先出现中文原生确认提示，取消则退出；系统已具备时不重复提示。

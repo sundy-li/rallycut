@@ -5,7 +5,7 @@
 ## 当前交付
 
 - GitHub：`sundy-li/rallycut`，**public**；源码、文档和 Release 安装包可匿名浏览／下载，无需邀请。
-- 当前统一版本：`v0.1.0-alpha.3`，预发布；同一个 Release 提供 macOS 通用包与 Windows 完整安装器／免安装包，历史 Release 在新版验证后撤下。以标签成功构建的实际 Assets 为准。
+- 当前统一版本：`v0.1.0-alpha.4`，预发布；同一个 Release 提供 macOS 通用包与 Windows 完整安装器／免安装包。`v0.1.0-alpha.3` 暂时保留，是否撤下由维护者明确决定。以标签成功构建的实际 Assets 为准。
 - 免费网站：**https://rallycut-app.pages.dev/**，中文指南 **/guide/**，英文首页 **/en/**、英文指南 **/en/guide/**。
 - Cloudflare Pages 项目名是 `rallycut-app`，部署使用 `--project-name rallycut-app`。`rallycut.pages.dev` 已被其他账户占用（2026-11 检查时是一个排球站点），无法申请。
 - 旧项目 `rallycut`（`rallycut-byc.pages.dev`）保留旧部署，不再更新；已经发出的旧链接仍可打开，但内容停在旧版。需要时可另行给旧项目部署跳转页。
@@ -56,15 +56,15 @@ site/public/media/rallycut-workbench-poster.webp
 ```bash
 git status --short
 # 确认本版已提交、测试通过且标签未占用
-git tag v0.1.0-alpha.3
+git tag v0.1.0-alpha.4
 git push origin main
-git push origin v0.1.0-alpha.3
+git push origin v0.1.0-alpha.4
 gh run list --repo sundy-li/rallycut --workflow release.yml --limit 5
 ```
 
 `release.yml` 在 macOS runner 生成通用包并校验两种架构、production 和 ad-hoc 签名；Windows 复用 `windows-preview.yml` 的完整预制环境、模型真实前向、安装／卸载保留数据、Unicode 导入／预览／导出、readiness 缓存与原生 Job Object／窗口／EXE 资源测试，不能退回仅编译 EXE 的轻量发布。两端成功后用 `scripts/verify_release.py` 检查精确的 7 项交付、完整 SHA-256 覆盖和 runtime 版本，再创建预发布。手动 workflow_dispatch 只构建，不发布。
 
-下载新附件后再执行 `python scripts/verify_release.py <下载目录> --version 0.1.0-alpha.3`。CI 成功不等于 Windows ARM VM、原生选择器点击、共享盘网络、Intel Mac 或多显示器真机验收。
+下载新附件后再执行 `python scripts/verify_release.py <下载目录> --version 0.1.0-alpha.4`。CI 成功不等于 Windows ARM VM、原生选择器点击、共享盘网络、Intel Mac 或多显示器真机验收。
 
 `just package-macos` 会写 `build/bin`，不要与同一工作树中的 `wails dev` 并行；使用 CI 独立构建。本次不关闭用户开发实例、不上传旧 ZIP 冒充新构建。
 

@@ -8,7 +8,7 @@ on:
       version:
         description: 'Prerelease version without v (build only; tags publish)'
         required: true
-        default: '0.1.0-alpha.3'
+        default: '0.1.0-alpha.4'
         type: string
 
 permissions:
@@ -117,10 +117,22 @@ jobs:
         env:
           VERSION: ${{ needs.version.outputs.value }}
         run: python scripts/verify_release.py dist --version "$VERSION"
+      - name: Resolve relative doc links for the release body
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          python - <<'PY'
+          import os, re
+          from pathlib import Path
+          base = f"https://github.com/sundy-li/rallycut/blob/{os.environ['TAG']}/docs/"
+          text = Path('docs/releases.zh-CN.md').read_text(encoding='utf-8')
+          text = re.sub(r'\]\((?!https?:|#|/)([^)]+\.md(?:#[^)]*)?)\)', lambda m: f']({base}{m[1]})', text)
+          Path(os.environ['RUNNER_TEMP'], 'release-notes.md').write_text(text, encoding='utf-8')
+          PY
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/*
           generate_release_notes: false
           prerelease: true
           fail_on_unmatched_files: true
-          body_path: docs/releases.zh-CN.md
+          body_path: ${{ runner.temp }}/release-notes.md
