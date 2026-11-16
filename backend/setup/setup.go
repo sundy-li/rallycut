@@ -163,10 +163,24 @@ func (p *Provisioner) inspectRuntime(ctx context.Context) (string, []CheckItem) 
 	if checks[0].Ready && ctx.Err() == nil {
 		checks[2].Ready, checks[2].Detail = analysis.PythonDetail(python)
 	}
+	coreml := p.coreMLApplies(root)
+	if coreml && checks[2].Ready && ctx.Err() == nil {
+		if ok, detail := analysis.CoreMLToolsDetail(python); !ok {
+			checks[2].Ready = false
+			checks[2].Detail = "需要安装 Apple 神经引擎加速依赖 coremltools（约 10 MB）\n" + detail
+		}
+	}
 	weights, weightErr := defaultWeights()
 	if weightErr == nil {
 		if got, err := fileSHA256(p.weightsPath()); err == nil && strings.EqualFold(got, weights.SHA256) {
 			checks[3].Ready = true
+			// Weights are present; on Apple silicon the local Core ML package is
+			// part of the model step. A recorded conversion failure counts as
+			// done (analysis keeps torch MPS) so setup never loops on it.
+			if coreml && checks[2].Ready && ctx.Err() == nil && analysis.CoreMLStatus(ctx, python, p.options.Worker, p.options.DataDir) == "missing" {
+				checks[3].Ready = false
+				checks[3].Detail = coreMLMissingDetail
+			}
 		} else {
 			checks[3].Detail = "仅缺少模型文件，约 6 MB；下载并校验后继续"
 		}
@@ -179,7 +193,7 @@ func (p *Provisioner) inspectRuntime(ctx context.Context) (string, []CheckItem) 
 	}
 	// Preserve explicit developer/repository model discovery for non-bundled
 	// checkouts; installed releases use their own model files and strict pin.
-	if p.bundleSpec() == nil && root == "" && runtimeChecksReady(checks) && !checks[3].Ready && ctx.Err() == nil {
+	if p.bundleSpec() == nil && root == "" && runtimeChecksReady(checks) && !checks[3].Ready && checks[3].Detail != coreMLMissingDetail && ctx.Err() == nil {
 		verify.Ready, verify.Detail = analysis.ModelDetailContext(ctx, python, p.options.Worker, p.options.DataDir)
 		if verify.Ready {
 			checks[3].Ready = true
@@ -227,6 +241,10 @@ func (p *Provisioner) Detect(ctx context.Context) {
 		p.state = State{State: "required", Step: "check", Message: "首次使用需要准备运行环境", Platform: platformName(), Checks: checks, Network: true}
 		if runtimeChecksReady(checks) && !checkReady(checks, "model") {
 			p.state.Message = "运行环境已随软件安装，仅需首次下载模型（约 6 MB）"
+			if checkDetail(checks, "model") == coreMLMissingDetail {
+				p.state.Message = "需要在本机生成一次加速模型（不联网，约 1 分钟）"
+				p.state.Network = false
+			}
 		}
 		if runtimeChecksReady(checks) && checkReady(checks, "model") && !checkReady(checks, "verify") {
 			p.state.State = "failed"
@@ -360,6 +378,7 @@ func (p *Provisioner) provision(ctx context.Context) (string, error) {
 	if err := p.ensureWeights(ctx); err != nil {
 		return "", fmt.Errorf("下载模型权重失败：%w", err)
 	}
+	p.ensureCoreML(ctx, python, "")
 	p.update(0.96, "verify", "检查视频工具、依赖与模型…", "只有全部通过才会进入剪辑界面")
 	p.setIndeterminate(true)
 	defer p.setIndeterminate(false)
@@ -427,6 +446,13 @@ func platformRequirements(name, goos, arch string) ([]byte, error) {
 	if goos == "darwin" && arch == "amd64" {
 		data = bytes.ReplaceAll(data, []byte("numpy==2.2.6"), []byte("numpy==1.26.4"))
 		data = bytes.ReplaceAll(data, []byte("torch==2.8.0"), []byte("torch==2.2.2"))
+	}
+	if name == "requirements-model.txt" && goos == "darwin" && arch == "arm64" {
+		extra, err := vision.Requirements.ReadFile("requirements-coreml.txt")
+		if err != nil {
+			return nil, err
+		}
+		data = append(append(data, '\n'), extra...)
 	}
 	if name == "requirements-model.txt" && goos == "windows" {
 		extra, err := vision.Requirements.ReadFile("requirements-windows.txt")

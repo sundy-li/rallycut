@@ -29,7 +29,7 @@ rallycut-labels/
 
 `headless.py analyze --dump-l0 <path>` 在新鲜推理时写出每个送入模型的帧的 PTS、镜头快照（含可选几何）、原始模型点，以及最终镜头状态、切镜、几何分段、声音冲击（gzip JSON，30 fps 的 50 分钟视频约 1–3 MB）。`detection_cache.replay` 把它按原顺序喂给 `neural_analysis.TrackingStage`——新鲜分析也用同一个类，所以未改代码时重放结果与新鲜推理逐项相同（单测 `test_l0_cache_replay_reproduces_the_fresh_result`；`eval cache` 对真实视频再核对一次，不一致的缓存不会被使用）。
 
-缓存摘要覆盖：模型名、权重 SHA、设备、精度、batch、解码器、table_mode、是否有声音，以及 L0 源码（`pretrained`、`backends`、`video_decode`、`shot_boundary`、`table_locator`、`table_jump`、`net_geometry`、`audio_features`、`inference_pipeline`、BlurBall 网络与配置、`DetectionRun`、`visual.find_table`）。这些变了，缓存自动失效，需要重新 `eval cache`；不会静默用旧缓存。
+缓存摘要覆盖：模型名、权重 SHA、设备、精度、batch、解码器、table_mode、是否有声音，以及 L0 源码（`pretrained`、`backends`、`coreml_model`、`video_decode`、`shot_boundary`、`table_locator`、`table_jump`、`net_geometry`、`audio_features`、`inference_pipeline`、BlurBall 网络与配置、`DetectionRun`、`visual.find_table`）。这些变了，缓存自动失效，需要重新 `eval cache`；不会静默用旧缓存。
 
 | 改动 | 回测 |
 |---|---|
@@ -50,6 +50,8 @@ just eval run                          # 重放 + 打分 + 报告
 just eval run --save-baseline v15      # 保存基线
 just eval run --compare v15 --gate     # 与基线逐项对比；任一视频 F1 降 >0.02 或召回下降则失败
 ```
+
+Core ML（2026-11）：两套新鲜缓存在全部 6 个视频上打分与 v17 相同，标注范围内候选无变化，范围外少数边界移动，见 `docs/throughput.md`。不同推理后端的缓存并存、互不替换：`eval cache --runtime coreml` 写 `device=coreml` 的缓存；`run` / `status` 默认只用 `--backend mps`（与基线同口径），对比 Core ML 时显式 `eval run --backend coreml --compare <基线>`。
 
 ## 纪律
 

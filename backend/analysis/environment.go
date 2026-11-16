@@ -10,6 +10,7 @@ import (
 	"rallycut/backend/childproc"
 	"rallycut/backend/media"
 	"rallycut/backend/runtimeenv"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -125,4 +126,54 @@ func probeFailure(ctx context.Context, label string, out []byte, err error) stri
 		}
 	}
 	return fmt.Sprintf("%s失败：%v%s\n%s", label, err, hint, detail)
+}
+
+// CoreMLSupported reports whether this build converts the model to a local
+// Core ML package (Apple silicon only; Intel Macs have no Neural Engine).
+func CoreMLSupported() bool { return runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" }
+
+// CoreMLToolsDetail checks that the converter dependency is importable from the
+// managed runtime.
+func CoreMLToolsDetail(python string) (bool, string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	code := `import coremltools,sys,pathlib
+p=pathlib.Path(coremltools.__file__).resolve()
+assert p.is_relative_to(pathlib.Path(sys.prefix).resolve()),'dependency outside runtime: '+str(p)
+print('coremltools',coremltools.__version__)`
+	cmd := childproc.CommandContext(ctx, python, "-I", "-c", code)
+	cmd.Env = PythonEnv()
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return false, probeFailure(ctx, "Core ML 转换依赖导入", out, err)
+	}
+	return true, ""
+}
+
+// CoreMLStatus is "ready" (verified package), "failed" (this converter already
+// failed here; analysis keeps torch MPS) or "missing".
+func CoreMLStatus(ctx context.Context, python, worker, dataDir string) string {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	cmd := childproc.CommandContext(ctx, python, "-I", filepath.Join(filepath.Dir(worker), "coreml_model.py"), "status", "--data-dir", dataDir)
+	cmd.Env = PythonEnv()
+	out, err := cmd.Output()
+	if err != nil {
+		return "missing"
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// ConvertCoreML builds and verifies the local Core ML package. The caller
+// treats failure as non-fatal: analysis then stays on torch MPS.
+func ConvertCoreML(ctx context.Context, python, worker, dataDir string) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+	cmd := childproc.CommandContext(ctx, python, "-I", filepath.Join(filepath.Dir(worker), "coreml_model.py"), "convert", "--data-dir", dataDir)
+	cmd.Env = append(PythonEnv(), "RALLYCUT_DATA_DIR="+dataDir)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return errors.New(probeFailure(ctx, "生成 Core ML 加速模型", out, err))
+	}
+	return nil
 }

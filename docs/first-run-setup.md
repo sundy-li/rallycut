@@ -64,6 +64,14 @@ OpenCV 固定 4.11.0.86。不支持的系统／架构会明确失败，不安装
 - 所有来源都不可达时（例如官方服务器整体超时、本地代理握手 `EOF`），准备页在模型未就绪时提供 **“从本地文件导入模型”**：选择框默认打开“下载”文件夹；后端只读源文件，按固定大小与 SHA-256 校验写入的字节，通过才原子替换 `models/weights/blurball_best.pth`，随后重新检测（不联网）。文件名不参与判断；准备 / 检测进行中拒绝导入。实现见 `backend/setup/import.go` 与 `App.ImportModelWeights`。
 - 清单内容参与 readiness 记录的键，修改 `models/manifest.json` 后首次启动会完整检测一次。
 
+## Apple silicon：本机 Core ML 加速模型
+
+- macOS arm64 的推理依赖额外安装 `coremltools==9.0`（`vision/requirements-coreml.txt`，约 10 MB 连同依赖）；Intel Mac 与 Windows 不装。
+- 权重就绪后，准备流程运行 `coreml_model.py convert`：在本机把已校验的权重转换为 FP16 `models/derived/BlurBall.mlpackage`，与 torch 在固定输入上对照（最大差 ≤0.01、相关 ≥0.999，实测 0.0002 / 0.99999），通过后才写 sidecar `BlurBall.mlpackage.json`。约 1 分钟，不联网；它是权重的派生物，不随安装包、skill 或 Git 分发。
+- `backends.py` 只使用 sidecar 中转换器版本与权重 SHA-256 都匹配的包；否则继续 torch MPS FP32。转换失败写 `BlurBall.mlpackage.failed.json` 并记日志，不阻止进入软件，同一转换器版本不重复尝试。
+- 已安装旧版的 Mac 首次打开新版时，检测会提示缺少 `coremltools` / 加速模型，需要点一次“开始准备环境”（只装这一个包并本机转换，其余组件复用）。
+- 分析缓存键包含后端身份（`analysis.BackendIdentity`：sidecar 内容、`RALLYCUT_RUNTIME` 等覆盖），Core ML 与 MPS 的结果不会互相复用。
+
 ## 维护入口与验证
 
 - 后端：`backend/setup/{setup.go,artifacts.go,artifacts.json}`。

@@ -22,7 +22,13 @@ setup:
 
 # 可选：安装模型依赖并下载权重（权重不随仓库分发）
 setup-model:
+    #!/usr/bin/env bash
+    set -euo pipefail
     uv pip install --python .venv/bin/python -r vision/requirements-model.txt
+    # Apple silicon: same Core ML converter dependency as the desktop setup.
+    if [ "$(uname -s)" = Darwin ] && [ "$(uname -m)" = arm64 ]; then
+      uv pip install --python .venv/bin/python -r vision/requirements-coreml.txt
+    fi
     .venv/bin/python vision/download_model.py
 
 # 启动 Wails 桌面应用；.venv / node_modules 缺失时先自动 setup
@@ -55,7 +61,7 @@ models:
     #!/usr/bin/env bash
     set -euo pipefail
     if [ "$(uname -s)" = "Darwin" ]; then
-      {{python}} scripts/convert_blurball_coreml.py --out models/derived/BlurBall.mlpackage
+      {{python}} scripts/convert_blurball_coreml.py --force
     fi
     {{python}} scripts/export_blurball_onnx.py --out models/derived/BlurBall.onnx
 

@@ -63,12 +63,19 @@ class Dataset:
     def cache_dir(self, video):
         return self.root / "cache" / video["id"]
 
-    def valid_cache(self, video):
-        """Newest verified cache whose L0 code matches the current sources."""
+    def valid_cache(self, video, device=None):
+        """Newest verified cache whose L0 code matches the current sources.
+
+        `device` (mps / coreml / cpu …) selects caches from one inference
+        backend, so a Core ML A/B never silently replaces the torch baseline.
+        """
         best = None
         for meta_path in sorted(self.cache_dir(video).glob("*/meta.json")):
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
             if meta.get("sources") != detection_cache.source_digest():
+                continue
+            # Metadata without a recorded device predates per-backend caches.
+            if device and meta.get("key", {}).get("device", device) != device:
                 continue
             if not meta.get("verified"):
                 continue
@@ -94,8 +101,11 @@ def compare_fresh(fresh, replayed):
 
 
 def cmd_cache(args, data):
+    # The cache's own backend: --runtime coreml writes coreml caches.
+    if args.runtime == "coreml":
+        args.backend = "coreml"
     for video in data.videos(args.video):
-        found = data.valid_cache(video)
+        found = data.valid_cache(video, getattr(args, 'backend', None))
         if found and not args.force:
             print(f"{video['id']}: 已有有效 L0 缓存 {found[0].name}，跳过", flush=True)
             continue
@@ -147,7 +157,7 @@ def cmd_run(args, data):
     report = {"created": datetime.datetime.now().isoformat(timespec="seconds"), "videos": {}}
     skipped = []
     for video in data.videos(args.video):
-        found = data.valid_cache(video)
+        found = data.valid_cache(video, getattr(args, 'backend', None))
         if not found:
             skipped.append(video["id"])
             continue
@@ -317,7 +327,7 @@ def cmd_import(args, data):
 def cmd_status(args, data):
     for video in data.videos(args.video):
         doc = video["doc"]
-        found = data.valid_cache(video)
+        found = data.valid_cache(video, getattr(args, 'backend', None))
         caches = sorted(p.parent.name for p in data.cache_dir(video).glob("*/meta.json"))
         req = sum(1 for r in doc["rallies"] if not r.get("optional"))
         print(f"{video['id']:6} {video['role']:7} 回合 {req:3}（可选 {len(doc['rallies']) - req}） 范围 {doc['covered']} "
@@ -340,6 +350,8 @@ def main(argv=None):
     for name in ("cache", "run", "status"):
         p = sub.add_parser(name)
         p.add_argument("--video", action="append", help="只处理这些视频 id（可重复）")
+        p.add_argument("--backend", default="mps",
+                       help="只用该推理后端的 L0 缓存（mps / coreml / cpu）；默认 mps 与基线一致")
         if name == "cache":
             p.add_argument("--force", action="store_true", help="即使已有有效缓存也重新推理")
             p.add_argument("--device", default="mps", choices=["auto", "mps", "cpu"])

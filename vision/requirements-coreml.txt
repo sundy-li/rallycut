@@ -1,0 +1,3 @@
+# Apple silicon only: converts the pinned weights to a local Core ML package
+# (vision/coreml_model.py). Installed by desktop setup on darwin/arm64.
+coremltools==9.0

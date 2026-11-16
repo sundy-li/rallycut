@@ -278,6 +278,10 @@ func TestPlatformRequirementsMatchAvailableWheels(t *testing.T) {
 		if tc.goos == "windows" && !strings.Contains(string(model), "onnxruntime-directml") {
 			t.Fatal("Windows dependencies omitted")
 		}
+		// Only Apple silicon converts the local Core ML package.
+		if got := strings.Contains(string(model), "coremltools==9.0"); got != (tc.goos == "darwin" && tc.arch == "arm64") {
+			t.Fatalf("coremltools presence %v for %+v", got, tc)
+		}
 	}
 }
 

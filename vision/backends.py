@@ -2,7 +2,8 @@
 
 macOS: Core ML / Apple Neural Engine. Windows/Linux: ONNX Runtime with DirectML,
 CUDA or CPU. Artifacts are local derivatives of the pinned weights and are never
-committed; build them with `just models`.
+committed or shipped; build them with `just models`. The desktop app converts
+the Core ML package during setup (coreml_model.py).
 """
 import os
 import sys
@@ -29,8 +30,16 @@ def locate_artifact(kind):
         path = Path(explicit)
         return path if path.exists() else None
     for candidate in _candidates(kind):
-        if candidate.exists():
-            return candidate
+        if not candidate.exists():
+            continue
+        # A Core ML package is a local derivative: only use one that the
+        # current converter produced from the pinned weights and verified.
+        if kind == "coreml":
+            from coreml_model import sidecar_ok
+            if not sidecar_ok(candidate):
+                print(f"[backends] ignoring unverified Core ML package {candidate}", file=sys.stderr)
+                continue
+        return candidate
     return None
 
 

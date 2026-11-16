@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"rallycut/backend/childproc"
 	"rallycut/backend/media"
 	"rallycut/backend/project"
@@ -66,9 +67,37 @@ type Stream struct {
 	ProcessedSeconds float64
 }
 
-func CacheKey(fingerprint string) string {
-	sum := sha256.Sum256([]byte(fmt.Sprintf("%d:%s:%s:%s", ProtocolVersion, Model+":"+WeightsSHA256, vision.Digest(), fingerprint)))
+// CacheKey also covers the inference backend (BackendIdentity): a Core ML
+// FP16 result must not be served for a torch MPS FP32 run or vice versa.
+func CacheKey(fingerprint, backend string) string {
+	sum := sha256.Sum256([]byte(fmt.Sprintf("%d:%s:%s:%s:%s", ProtocolVersion, Model+":"+WeightsSHA256, vision.Digest(), fingerprint, backend)))
 	return hex.EncodeToString(sum[:])
+}
+
+// BackendIdentity summarizes what vision/backends.py may pick up: runtime
+// overrides plus any local Core ML sidecar / ONNX artifact in the roots it
+// searches (data dir and working directory).
+func BackendIdentity(dataDir string) string {
+	hash := sha256.New()
+	for _, key := range []string{"RALLYCUT_RUNTIME", "RALLYCUT_COREML_MODEL", "RALLYCUT_ONNX_MODEL", "RALLYCUT_INFERENCE_DEVICE"} {
+		fmt.Fprintf(hash, "%s=%s\n", key, os.Getenv(key))
+	}
+	roots := []string{dataDir}
+	if cwd, err := os.Getwd(); err == nil {
+		roots = append(roots, cwd)
+	}
+	for _, root := range roots {
+		for _, relative := range []string{"models/derived", "build/coreml", "build/onnx", "models"} {
+			dir := filepath.Join(root, relative)
+			if data, err := os.ReadFile(filepath.Join(dir, "BlurBall.mlpackage.json")); err == nil && len(data) < 1<<20 {
+				fmt.Fprintf(hash, "coreml:%s:%x\n", dir, sha256.Sum256(data))
+			}
+			if info, err := os.Stat(filepath.Join(dir, "BlurBall.onnx")); err == nil {
+				fmt.Fprintf(hash, "onnx:%s:%d:%d\n", dir, info.Size(), info.ModTime().UnixNano())
+			}
+		}
+	}
+	return hex.EncodeToString(hash.Sum(nil))[:16]
 }
 
 // Capped stderr avoids unbounded memory consumption from a broken worker.

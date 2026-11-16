@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Convert the pinned BlurBall detector to Core ML (FP16) and benchmark it.
 
-Torch MPS stays the reference: the converted model must reproduce its heatmaps
-before it is allowed anywhere near the analysis pipeline.
+Conversion, the torch parity gate and the sidecar live in vision/coreml_model.py,
+shared with the desktop setup; this script adds the speed comparison.
 """
 import argparse
 import json
@@ -39,46 +39,6 @@ def load_model() -> torch.nn.Module:
     checkpoint = torch.load(locate_weights(), map_location="cpu", weights_only=True)
     model.load_state_dict(checkpoint["model_state_dict"], strict=True)
     return model.eval()
-
-
-def convert(output: Path, batch: int) -> None:
-    import coremltools as ct
-
-    wrapper = SigmoidHead(load_model()).eval()
-    example = torch.randn(batch, *INPUT_SHAPE[1:])
-    with torch.no_grad():
-        traced = torch.jit.trace(wrapper, example)
-    # The pipeline runs four 3-frame windows per call. Enumerated shapes keep a
-    # single Python/Core ML round-trip per batch instead of one per window.
-    shapes = ct.EnumeratedShapes(shapes=[(1, 9, 288, 512), (4, 9, 288, 512)])
-    model = ct.convert(
-        traced,
-        inputs=[ct.TensorType(name="frames", shape=shapes, dtype=np.float32)],
-        outputs=[ct.TensorType(name="heatmap")],
-        minimum_deployment_target=ct.target.macOS15,
-        compute_precision=ct.precision.FLOAT16,
-        convert_to="mlprogram",
-    )
-    model.short_description = "RallyCut BlurBall heatmap (FP16, ANE-capable)"
-    output.parent.mkdir(parents=True, exist_ok=True)
-    model.save(str(output))
-    print(f"saved {output} ({sum(f.stat().st_size for f in output.rglob('*') if f.is_file())/1e6:.2f} MB)")
-
-
-def parity(path: Path, batch: int) -> None:
-    import coremltools as ct
-
-    torch.manual_seed(0)
-    frames = torch.randn(batch, *INPUT_SHAPE[1:])
-    with torch.no_grad():
-        reference = SigmoidHead(load_model())(frames).numpy()
-    model = ct.models.MLModel(str(path), compute_units=ct.ComputeUnit.ALL)
-    prediction = model.predict({"frames": frames.numpy()})["heatmap"]
-    diff = np.abs(prediction - reference)
-    print(
-        f"parity: max={diff.max():.5f} mean={diff.mean():.6f} "
-        f"corr={np.corrcoef(prediction.ravel(), reference.ravel())[0,1]:.6f}"
-    )
 
 
 def benchmark(path: Path, batch: int, iterations: int) -> None:
@@ -121,15 +81,18 @@ def benchmark(path: Path, batch: int, iterations: int) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--out", default=str(ROOT / "models/derived/BlurBall.mlpackage"))
+    parser.add_argument("--root", default=str(ROOT), help="writes <root>/models/derived/BlurBall.mlpackage")
     parser.add_argument("--batch", type=int, default=4)
     parser.add_argument("--iterations", type=int, default=60)
-    parser.add_argument("--skip-convert", action="store_true")
+    parser.add_argument("--force", action="store_true", help="reconvert even if a verified package exists")
     args = parser.parse_args()
-    path = Path(args.out)
-    if not args.skip_convert:
-        convert(path, args.batch)
-    parity(path, args.batch)
+    import coreml_model
+    target = coreml_model.derived_dir(args.root)
+    if args.force:
+        (target / coreml_model.SIDECAR).unlink(missing_ok=True)
+    # Same conversion + parity gate + sidecar as the desktop setup.
+    path, report = coreml_model.ensure(args.root)
+    print(f"{path}: {'reused verified package' if report is None else report}")
     benchmark(path, args.batch, args.iterations)
 
 

@@ -857,7 +857,7 @@ func (a *App) startAnalysis(useCache bool) (project.Job, error) {
 		if hash != p.Video.Fingerprint {
 			return "", fmt.Errorf("原视频已变化，请重新导入")
 		}
-		cache := filepath.Join(a.dataDir, "cache", analysis.CacheKey(hash)+".json")
+		cache := filepath.Join(a.dataDir, "cache", analysis.CacheKey(hash, analysis.BackendIdentity(a.dataDir))+".json")
 		var cached analysis.Result
 		var result *analysis.Result
 		if useCache && storage.ReadJSON(cache, &cached) == nil && analysis.Validate(&cached, p.Video.Duration) == nil && cached.Model == analysis.Model {

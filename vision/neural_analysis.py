@@ -105,6 +105,32 @@ class TrackingStage:
         return rallies,serialize_tracks(self.accepted,off_play_tracks(self.accepted))
 
 
+class LiveRefresh:
+    """Bound the cost of live rally previews during analysis.
+
+    TrackingStage.rallies() re-segments every accepted track from the start,
+    so its cost grows with the processed duration (about 30 ms per call early
+    in a 50-minute match, 190 ms near the end). Calling it every 2 s of video
+    made the total quadratic: about 175 s of GIL-holding CPU per match, which
+    also slowed the decode and model threads. After each recompute the next
+    one waits `ratio` times its own wall time, so previews cost about
+    1/ratio of the analysis. Only the preview cadence changes; the final
+    result is always computed once by TrackingStage.finish().
+    """
+    def __init__(self,ratio=30.0,clock=time.perf_counter):
+        self.ratio=ratio;self.clock=clock
+        self.ready_at=0.0;self.partial=[];self.seconds=0.0;self.computed=0
+
+    def rallies(self,stage,horizon,force=False):
+        now=self.clock()
+        if force or now>=self.ready_at:
+            self.partial=stage.rallies(horizon)
+            cost=self.clock()-now
+            self.seconds+=cost;self.computed+=1
+            self.ready_at=now+cost*(1+self.ratio)
+        return self.partial
+
+
 class DetectionRun:
     """L0: decode, shot / optional geometry monitor and the ball model.
 
@@ -202,6 +228,7 @@ def analyze(video_path,duration,progress,audio_path=None,device='auto',frame_cal
     stage=TrackingStage(duration,impacts,net_region)
     if l0_recorder is not None:l0_recorder.start(run,impacts,bool(audio_path))
     state={'last_report':-2.0,'last_candidates':None,'last_table':None,'emitted':0}
+    live=LiveRefresh()
 
     def on_record(record,raw):
         timestamp=record['t']
@@ -211,7 +238,11 @@ def analyze(video_path,duration,progress,audio_path=None,device='auto',frame_cal
         table_bounds=stage.table_bounds
         due=timestamp-state['last_report']>=2
         if candidates_callback and (due or table_bounds!=state['last_table']):
-            partial=stage.rallies(timestamp)
+            # Within the cost budget only; otherwise the last preview is
+            # resent. A geometry change still reaches the overlay at once
+            # (table_bounds below) without forcing a recompute: on spectator
+            # footage optional geometry changes every few seconds.
+            partial=live.rallies(stage,timestamp)
             signature=tuple((r['start'],r['end'],r.get('boundary_before',False),r.get('end_reason','')) for r in partial)
             fresh=serialize_tracks(stage.accepted[state['emitted']:])
             changed=bool(partial) and signature!=state['last_candidates']
@@ -273,6 +304,7 @@ def analyze(video_path,duration,progress,audio_path=None,device='auto',frame_cal
              'device':detector.device,'precision':getattr(detector,'precision',precision),'batch_size':batch_size,'pipeline':pipeline,
              'pipeline_timings':{key:round(value,6) if isinstance(value,float) else value for key,value in stages.items()},
              'duplicate_frames':duplicates,'detection_frames':detection_frames,
+             'live_preview':{'recomputes':live.computed,'seconds':round(live.seconds,3)},
              'processing_fps':round(rates.frames/stages['wall_seconds'],2) if stages['wall_seconds']>0 else 0,
              'analysis_fps':round(rates.frames/(time.monotonic()-started),2),'unscored_frames':unique-rates.frames,
              'implementation':'full-frame-v17','play_area_version':'play-area-v1','activity_rule_version':'side-transit-v4+frame-serve-v8+perspective-activity-v2','warnings':warnings,'calibration_strategy':'search_failed' if calibration_error else 'not_required'}

@@ -12,12 +12,12 @@ import (
 
 // Weights are deliberately NOT embedded. Keep upstream MIT notices with code.
 //
-//go:embed worker.py visual.py audio_features.py backends.py pretrained.py neural_analysis.py inference_pipeline.py performance.py video_decode.py table_locator.py table_jump.py shot_boundary.py rally_state.py rally_activity.py rally_transits.py rally_serves.py play_area.py net_geometry.py detection_cache.py vendor/blurball/network.py vendor/blurball/config.json vendor/blurball/LICENSE.md vendor/blurball/HRNET-LICENSE vendor/blurball/NOTICE.md
+//go:embed worker.py visual.py audio_features.py backends.py coreml_model.py pretrained.py neural_analysis.py inference_pipeline.py performance.py video_decode.py table_locator.py table_jump.py shot_boundary.py rally_state.py rally_activity.py rally_transits.py rally_serves.py play_area.py net_geometry.py detection_cache.py vendor/blurball/network.py vendor/blurball/config.json vendor/blurball/LICENSE.md vendor/blurball/HRNET-LICENSE vendor/blurball/NOTICE.md
 var files embed.FS
 
 // Requirements are installed into the app-managed runtime on first launch.
 //
-//go:embed requirements.txt requirements-model.txt requirements-windows.txt
+//go:embed requirements.txt requirements-model.txt requirements-windows.txt requirements-coreml.txt
 var Requirements embed.FS
 
 func Digest() string {
