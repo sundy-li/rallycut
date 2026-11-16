@@ -1,9 +1,9 @@
 ---
-name: rallycut-video-json
+name: rallycut
 description: 本地乒乓球比赛视频的回合识别与集锦剪辑，不需要打开 RallyCut 桌面版。识别回合候选 JSON；读取用户从 RallyCut 复制的项目信息或项目文件；按要求挑选回合（最多 N 个、收藏、指定编号）、调整发球前 / 结束后保留秒数，先出剪辑计划再导出 MP4 集锦。用于“识别乒乓球回合”“视频切成片段 JSON”“帮我从这个 RallyCut 项目剪一版集锦”“只要最精彩的 10 个回合”“把前后缓冲改成 2 秒重新导出”等请求。使用专用 BlurBall 预训练模型；完全本地运行，不需要 Go、Node 或 Wails。
 ---
 
-# RallyCut：回合识别与集锦剪辑
+# RallyCut：乒乓球回合识别与集锦剪辑
 
 三类任务，按用户已有的东西选入口：
 
@@ -65,7 +65,7 @@ python3 "$SKILL_DIR/scripts/rallycut.py" analyze \
    ```
 
 2. 向用户复述计划：片段数、总时长、用了哪些回合（`spans[].rallies` 是各素材内的回合编号 `n`）和缓冲秒数。用户的要求含糊（“精彩的”“短一点”）时，说明你采用的筛选方式。
-3. **再导出**，参数与计划一致，输出必须是新的 `.mp4`：
+3. **再导出**，参数与计划一致，输出 `.mp4`：
 
    ```bash
    python3 "$SKILL_DIR/scripts/rallycut.py" export --input "/absolute/brief.json" \
@@ -84,7 +84,7 @@ python3 "$SKILL_DIR/scripts/rallycut.py" analyze \
 
 编码相关：`--codec h264|hevc`、`--encoder auto|software`（macOS 默认 VideoToolbox，失败整批改软件编码）、`--bit-rate`（0 跟随原片）、`--overlap merge|sequential|human|machine`（人工与机器回合重叠时保留哪个）、`--rally-labels`（左上角烧录回合编号）、`--trajectory`（烧录球轨迹，只有桌面项目文件带轨迹）。
 
-不变的规则：输出已存在就失败，换新文件名，不覆盖、不删除原片；原片内容指纹不符（被替换或修改）时拒绝导出；不要自己拼 ffmpeg 命令绕过这些检查。
+不变的规则：输出已存在就失败，换新文件名；只有用户明确要求替换旧成片时才加 `--overwrite`（新文件完整导出后才替换）。永远不覆盖、不删除原片；原片内容指纹不符（被替换或修改）时拒绝导出；不要自己拼 ffmpeg 命令绕过这些检查。
 
 `brief --input <项目.json> [--markdown]` 可在没有桌面版时生成同样的项目信息，用于查看回合列表或交给另一个 agent。
 

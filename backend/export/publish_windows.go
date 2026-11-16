@@ -18,3 +18,17 @@ func publishCompleted(source, dest string) error {
 	}
 	return windows.MoveFile(from, to)
 }
+
+// replaceCompleted swaps in the finished file on the same volume, replacing
+// an existing export (MOVEFILE_REPLACE_EXISTING).
+func replaceCompleted(source, dest string) error {
+	from, err := windows.UTF16PtrFromString(source)
+	if err != nil {
+		return err
+	}
+	to, err := windows.UTF16PtrFromString(dest)
+	if err != nil {
+		return err
+	}
+	return windows.MoveFileEx(from, to, windows.MOVEFILE_REPLACE_EXISTING)
+}

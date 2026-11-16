@@ -76,7 +76,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet(command, flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	input := fs.String("input", "", "desktop project (*-rallycut.json), project brief or skill segments JSON")
-	output := fs.String("output", "", "export: new .mp4 path (never overwritten)")
+	output := fs.String("output", "", "export: .mp4 path; an existing file is refused unless --overwrite")
+	overwrite := fs.Bool("overwrite", false, "export: replace an existing output file after the new one is complete (never a source video)")
 	markdown := fs.Bool("markdown", false, "brief: print the clipboard Markdown instead of JSON")
 	rallies := fs.String("rallies", "", "comma-separated rally keys (<source id>/<rally id>) or ids to export; others are dropped")
 	maxRallies := fs.Int("max-rallies", 0, "keep at most N rallies: favorites, then higher score, then longer")
@@ -183,9 +184,14 @@ func run(args []string, stdout, stderr io.Writer) int {
 			return fail(stderr, errors.New("refusing to write over a source video"))
 		}
 	}
+	if *overwrite {
+		if info, err := os.Lstat(target); err == nil && !info.Mode().IsRegular() {
+			return fail(stderr, fmt.Errorf("refusing to overwrite a non-regular file: %s", target))
+		}
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	err = export.Run(ctx, p, target, func(fraction float64, message string) {
+	err = export.RunWith(ctx, p, target, export.Options{Overwrite: *overwrite}, func(fraction float64, message string) {
 		emit(stderr, map[string]any{"type": "progress", "progress": fraction, "message": message})
 	})
 	if err != nil {

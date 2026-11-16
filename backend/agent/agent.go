@@ -56,7 +56,7 @@ type Brief struct {
 	Sources        []Source               `json:"sources"`
 }
 
-const briefNote = "Times are seconds on each source video's own timeline. Rallies are machine candidates unless human=true; review before claiming accuracy. To change the cut, edit selected / start / end here (or pass --rallies) and run the rallycut-video-json skill: plan first, then export to a new .mp4. Never overwrite source videos."
+const briefNote = "Times are seconds on each source video's own timeline. Rallies are machine candidates unless human=true; review before claiming accuracy. To change the cut, edit selected / start / end here (or pass --rallies) and run the rallycut skill: plan first, then export to a new .mp4. Never overwrite source videos."
 
 // NewBrief summarizes p. path is the project file, if saved.
 func NewBrief(p *project.Project, path string) Brief {
@@ -115,8 +115,8 @@ func Markdown(b Brief) (string, error) {
 		fmt.Fprintf(&w, "- 素材 %d：%s（%s，%.0f 秒）\n", i+1, s.Video.Name, s.Video.Path, s.Video.Duration)
 	}
 	w.WriteString("\n回合是机器识别的候选，`human: true` 为用户添加或修改；时间单位是秒，都在各自素材的时间轴上。\n\n")
-	w.WriteString("## 用 rallycut-video-json skill 二次剪辑\n\n")
-	w.WriteString("把下面的 JSON 存为文件（如 `brief.json`），按需要改 `selected` / `start` / `end`，然后先看计划、再导出到新的 .mp4（不会覆盖原片）：\n\n")
+	w.WriteString("## 用 rallycut skill 二次剪辑\n\n")
+	w.WriteString("把下面的 JSON 存为文件（如 `brief.json`），按需要改 `selected` / `start` / `end`，然后先看计划、再导出 .mp4（不会覆盖原片；替换已有成片需加 `--overwrite`）：\n\n")
 	w.WriteString("```bash\npython3 \"$SKILL_DIR/scripts/rallycut.py\" plan --input brief.json [--max-rallies 10] [--pre-roll 2] [--post-roll 1]\n")
 	w.WriteString("python3 \"$SKILL_DIR/scripts/rallycut.py\" export --input brief.json --output /absolute/path/highlights.mp4 [同样的选项]\n```\n\n")
 	if b.ProjectPath != "" {

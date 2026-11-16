@@ -470,10 +470,14 @@ def main():
         burn_label=overlays.get_by_label('回合编号')
         expect(burn_track).not_to_be_checked()
         expect(burn_label).not_to_be_checked()
+        # Toggling must not flash the full-screen "saving" overlay, and two
+        # quick toggles must both stick (no stale read-modify-write).
+        page.evaluate("""window.__overlaySeen=false;new MutationObserver(()=>{if(document.querySelector('.pending-overlay'))window.__overlaySeen=true;}).observe(document.body,{childList:true,subtree:true});""")
         burn_track.check()
-        expect(burn_track).to_be_checked()
         burn_label.check()
+        expect(burn_track).to_be_checked()
         expect(burn_label).to_be_checked()
+        assert page.evaluate('window.__overlaySeen') is False, 'checkbox toggle showed the full-screen overlay' 
         saved=page.evaluate('window.go.backend.App.GetState().then(s=>s.project.export_settings)')
         assert saved.get('show_trajectory') is True and saved.get('show_rally_labels') is True, saved
         assert saved.get('overlap')=='merge' or saved.get('overlap') is None or isinstance(saved.get('overlap'),str), saved
@@ -486,8 +490,15 @@ def main():
         assert 'brief' in page.evaluate('window.__calls')
         page.get_by_role('button', name='导出精彩集锦', exact=False).click()
         # Human and machine rallies over the same footage: export asks which.
-        page.get_by_role('dialog').get_by_role('button',name='按此方式导出').click()
+        # Picking another policy must keep the burn-in overlays (it used to
+        # save only codec / encoder / bitrate / overlap and clear them).
+        dialog=page.get_by_role('dialog')
+        dialog.get_by_text('人工回合覆盖分析回合').click()
+        dialog.get_by_role('button',name='按此方式导出').click()
         expect(page.get_by_text('已保存：/test/highlights.mp4', exact=True)).to_be_visible()
+        saved=page.evaluate('window.go.backend.App.GetState().then(s=>s.project.export_settings)')
+        assert saved.get('overlap')=='human' and saved.get('show_trajectory') is True and saved.get('show_rally_labels') is False, saved
+        expect(burn_track).to_be_checked()
         page.get_by_role('button', name='打开文件夹', exact=True).click()
         page.wait_for_function("window.__calls.includes('reveal')")
         page.screenshot(path=str(ARTIFACTS / 'populated-workbench.png'), full_page=True)

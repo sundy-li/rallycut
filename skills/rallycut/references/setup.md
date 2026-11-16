@@ -2,9 +2,9 @@
 
 ## 安装位置
 
-本 skill 的已打包目录包含 `assets/runtime`，不依赖 RallyCut 仓库。将完整目录放入 agent 支持的 skills 目录即可，例如 `~/.agents/skills/rallycut-video-json/`；其他 agent 采用其自己的 skills 路径。`.skill` 文件是 ZIP，可用支持该格式的安装器，或先解压再放置完整目录。不要只复制 SKILL.md。
+本 skill 的已打包目录包含 `assets/runtime`，不依赖 RallyCut 仓库。将完整目录放入 agent 支持的 skills 目录即可，例如 `~/.agents/skills/rallycut/`；其他 agent 采用其自己的 skills 路径。`.skill` 文件是 ZIP，可用支持该格式的安装器，或先解压再放置完整目录。不要只复制 SKILL.md。
 
-仓库维护者用 `just skill` 生成 `build/skills/rallycut-video-json/` 和同目录 `.skill` 包。仓库里的 `skills/rallycut-video-json/` 是源模板，不含重复生成的运行时。
+仓库维护者用 `just skill` 生成 `build/skills/rallycut/` 和同目录 `.skill` 包。仓库里的 `skills/rallycut/` 是源模板，不含重复生成的运行时。
 
 ## 依赖
 
@@ -17,7 +17,7 @@
 - `doctor` / `analyze` 不联网，不自动安装依赖或下载模型。
 - 默认使用 Apple MPS，否则 CPU。当前实测平台为 macOS Apple Silicon；其他平台需运行 doctor / CPU 验证，不能承诺相同速度。
 
-默认缓存位于 macOS `~/Library/Caches/rallycut-video-json/`，其他系统 `$XDG_CACHE_HOME/rallycut-video-json/` 或 `~/.cache/rallycut-video-json/`。运行时按随包源码摘要隔离，权重缓存复用。更新 skill 后可再次显式 setup，准备新版本环境。
+默认缓存位于 macOS `~/Library/Caches/rallycut/`，其他系统 `$XDG_CACHE_HOME/rallycut/` 或 `~/.cache/rallycut/`。运行时按随包源码摘要隔离，权重缓存复用。更新 skill 后可再次显式 setup，准备新版本环境。
 
 ## 显式环境变量
 
@@ -40,7 +40,7 @@
 - **MPS 不可用 / 内存不足**：经用户同意用 CPU；检查并移除冲突的 `RALLYCUT_INFERENCE_DEVICE` 后传 `--device cpu`。
 - **时间戳非单调 / 提前 EOF / 源视频变化**：不输出残缺结果；先核查文件完整性，不按固定 FPS 伪造时间轴。
 - **项目复用失败**：原视频必须存在且指纹一致；只支持 BlurBall 项目，不能将旧 mock JSON 重新命名来通过。
-- **结果路径已存在**：换新路径；CLI 没有隐式覆盖或强制覆盖开关。
+- **结果路径已存在**：`analyze` / `from-project` 的 JSON 换新路径，没有覆盖开关；`export` 的 MP4 换新路径，或在用户明确要求替换旧成片时加 `--overwrite`。
 
 退出码：0 成功；1 运行 / 依赖 / 校验失败；2 参数错误；130 取消。进度写 stderr，完成摘要 / 结果 JSON 写 stdout。
 

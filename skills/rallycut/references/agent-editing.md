@@ -57,7 +57,8 @@
 | `--overlap` | `merge`（默认）/ `sequential` / `human` / `machine` |
 | `--codec` / `--encoder` / `--bit-rate` | `h264`·`hevc` / `auto`·`software` / 每秒比特，0 跟随原片 |
 | `--rally-labels` / `--trajectory` | 烧录回合编号 / 球轨迹（轨迹仅项目文件） |
-| `--output` | 仅 export：新的 `.mp4`，已存在则失败 |
+| `--output` | 仅 export：`.mp4` 路径；已存在则失败 |
+| `--overwrite` | 仅 export：用户明确要求替换已有成片时才加；新文件完整导出并校验后才替换，失败或取消时旧文件不变；原片永远不能被覆盖 |
 
 筛选顺序：先按 `--rallies`（若给）重设选中，再去掉 `invalid`、非收藏（`--favorites-only`）和过短的，最后应用 `--max-rallies`。
 

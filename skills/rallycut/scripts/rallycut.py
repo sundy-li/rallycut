@@ -26,7 +26,7 @@ def emit(document, error=False):
 def environment():
     manifest=RUNTIME/'runtime-manifest.json'
     if not manifest.is_file():
-        raise ValueError('Missing bundled runtime. Install the packaged skill folder (build/skills/rallycut-video-json), not the source template; build with just skill.')
+        raise ValueError('Missing bundled runtime. Install the packaged skill folder (build/skills/rallycut), not the source template; build with just skill.')
     data=json.loads(manifest.read_text(encoding='utf-8'))
     for relative,expected in data['files'].items():
         path=RUNTIME/relative
@@ -35,10 +35,12 @@ def environment():
     root=os.environ.get('RALLYCUT_SKILL_HOME')
     if root:
         home=Path(root).expanduser().resolve()
-    elif sys.platform=='darwin':
-        home=Path.home()/'Library/Caches/rallycut-video-json'
     else:
-        home=Path(os.environ.get('XDG_CACHE_HOME',str(Path.home()/'.cache')))/'rallycut-video-json'
+        base=Path.home()/'Library/Caches' if sys.platform=='darwin' else Path(os.environ.get('XDG_CACHE_HOME',str(Path.home()/'.cache')))
+        home=base/'rallycut'
+        legacy=base/'rallycut-video-json'  # skill name before 2026-11
+        if not home.exists() and legacy.is_dir():
+            home=legacy  # keep the prepared runtime and weights; no re-download
     venv=home/'runtimes'/data['digest'][:16]/'venv'
     python=Path(os.environ.get('RALLYCUT_SKILL_PYTHON',str(venv/('Scripts/python.exe' if os.name=='nt' else 'bin/python')))).expanduser().absolute()
     weights=Path(os.environ.get('RALLYCUT_MODEL_PATH',str(home/'models/blurball_best.pth'))).expanduser().absolute()
@@ -52,7 +54,7 @@ def tool():
     """Verified rallycut-cli for this OS / CPU."""
     manifest=RUNTIME/'runtime-manifest.json'
     if not manifest.is_file():
-        raise ValueError('Missing bundled runtime. Install the packaged skill folder (build/skills/rallycut-video-json), not the source template; build with just skill.')
+        raise ValueError('Missing bundled runtime. Install the packaged skill folder (build/skills/rallycut), not the source template; build with just skill.')
     tools=json.loads(manifest.read_text(encoding='utf-8')).get('tools',{})
     goos={'darwin':'darwin','win32':'windows'}.get(sys.platform,'linux' if sys.platform.startswith('linux') else sys.platform)
     machine=platform.machine().lower()

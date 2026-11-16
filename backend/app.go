@@ -947,7 +947,7 @@ func (a *App) ExportHighlights() (project.Job, error) {
 			return project.Job{}, err
 		}
 	}
-	path, err := wruntime.SaveFileDialog(a.ctx, wruntime.SaveDialogOptions{Title: "导出 MP4 集锦（使用新文件名）", DefaultFilename: "RallyCut-highlights.mp4", Filters: []wruntime.FileFilter{{DisplayName: "MP4 视频", Pattern: "*.mp4"}}})
+	path, err := wruntime.SaveFileDialog(a.ctx, wruntime.SaveDialogOptions{Title: "导出 MP4 集锦", DefaultFilename: "RallyCut-highlights.mp4", Filters: []wruntime.FileFilter{{DisplayName: "MP4 视频", Pattern: "*.mp4"}}})
 	if err != nil {
 		return project.Job{}, err
 	}
@@ -960,7 +960,10 @@ func (a *App) ExportHighlights() (project.Job, error) {
 	return a.manager.Start(a.ctx, "export", a.notify, func(ctx context.Context, progress func(float64, string)) (string, error) {
 		ctx, cancel := context.WithTimeout(ctx, 4*time.Hour)
 		defer cancel()
-		err := exporter.Run(ctx, p, path, progress)
+		// The native save panel (NSSavePanel / IFileSaveDialog) already asked
+		// the user to confirm replacing an existing file, so replace it once
+		// the new export is complete. Source videos are still refused.
+		err := exporter.RunWith(ctx, p, path, exporter.Options{Overwrite: true}, progress)
 		if err != nil {
 			return "", err
 		}

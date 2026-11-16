@@ -80,8 +80,28 @@ func TestImportAnalyzeEditSaveExport(t *testing.T) {
 	if err := exporter.Run(ctx, p, output, func(float64, string) {}); err == nil {
 		t.Fatal("existing output overwritten")
 	}
+	// Explicit overwrite (desktop after the native replace prompt) swaps in the
+	// new export; a cancelled overwrite leaves the old file intact.
+	before, _ := os.ReadFile(output)
 	cancelled, cancel := context.WithCancel(ctx)
 	cancel()
+	if err := exporter.RunWith(cancelled, p, output, exporter.Options{Overwrite: true}, func(float64, string) {}); err == nil {
+		t.Fatal("cancellation ignored")
+	}
+	if after, _ := os.ReadFile(output); string(after) != string(before) {
+		t.Fatal("cancelled overwrite damaged the existing export")
+	}
+	p.Rallies[1].Selected = false
+	if err := exporter.RunWith(ctx, p, output, exporter.Options{Overwrite: true}, func(float64, string) {}); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := media.Probe(ctx, output); err != nil || out.Duration > 1.6 {
+		t.Fatalf("overwrite did not replace the export: %+v %v", out, err)
+	}
+	if err := exporter.RunWith(ctx, p, p.Video.Path, exporter.Options{Overwrite: true}, func(float64, string) {}); err == nil {
+		t.Fatal("overwrote the source video")
+	}
+	p.Rallies[1].Selected = true
 	bad := filepath.Join(dir, "cancelled.mp4")
 	if err := exporter.Run(cancelled, p, bad, func(float64, string) {}); err == nil {
 		t.Fatal("cancellation ignored")

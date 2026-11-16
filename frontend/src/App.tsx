@@ -55,6 +55,7 @@ import {
   subscribeStream,
 } from "./api/client";
 import type {
+  ExportSettings,
   Job,
   OverlapMode,
   Project,
@@ -648,6 +649,46 @@ export default function App() {
     const ok = await run(action);
     setSaveStatus(ok ? "idle" : "error");
     return ok;
+  }
+  // Export settings are small, independent toggles. Apply them locally at
+  // once and persist in the background, in order: no full-screen "saving"
+  // overlay (it made the screen flash on every checkbox click), no stale
+  // read-modify-write when two toggles are clicked quickly, and a partial
+  // update can never drop the other fields (show_trajectory / labels).
+  const exportSettingsQueue = useRef<Promise<unknown>>(Promise.resolve());
+  const latestExportSettings = useRef<ExportSettings | undefined>(undefined);
+  useEffect(() => {
+    latestExportSettings.current = undefined;
+  }, [p?.id]);
+  function updateExportSettings(patch: Partial<ExportSettings>) {
+    if (!p) return Promise.resolve(false);
+    const next: ExportSettings = {
+      ...defaultExport,
+      ...(latestExportSettings.current ?? p.export_settings),
+      ...patch,
+    };
+    latestExportSettings.current = next;
+    setState((prev) =>
+      prev.project
+        ? { ...prev, project: { ...prev.project, export_settings: next } }
+        : prev,
+    );
+    setSaveStatus("saving");
+    const done = exportSettingsQueue.current.then(async () => {
+      try {
+        await api().SetExportSettings(next);
+        setSaveStatus("idle");
+        return true;
+      } catch (e) {
+        setSaveStatus("error");
+        setError(String(e));
+        latestExportSettings.current = undefined;
+        await refresh().catch(() => {});
+        return false;
+      }
+    });
+    exportSettingsQueue.current = done;
+    return done;
   }
   async function undoEdit() {
     if (!state.can_undo) return;
@@ -1354,9 +1395,7 @@ export default function App() {
             onRules={(rules) => void update(rallies, rules)}
             exportSettings={p?.export_settings}
             sourceBitRate={p?.video.bit_rate ?? 0}
-            onExportSettings={(settings) =>
-              void save(() => api().SetExportSettings(settings))
-            }
+            onExportSettings={(settings) => void updateExportSettings(settings)}
             skipStep={skipStep}
             onSkipStep={changeStep}
             onClose={() => setSettingsOpen(false)}
@@ -2810,16 +2849,9 @@ export default function App() {
                 <input
                   type="checkbox"
                   checked={Boolean(p?.export_settings?.[key])}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    void save(() =>
-                      api().SetExportSettings({
-                        ...defaultExport,
-                        ...p?.export_settings,
-                        [key]: checked,
-                      }),
-                    );
-                  }}
+                  onChange={(e) =>
+                    void updateExportSettings({ [key]: e.target.checked })
+                  }
                 />
                 {label}
               </label>
@@ -2849,7 +2881,10 @@ export default function App() {
             onClick={() =>
               allConflicts > 0
                 ? setExportOverlap(overlapMode)
-                : void run(() => api().ExportHighlights())
+                : void run(async () => {
+                    await exportSettingsQueue.current; // pending toggles first
+                    await api().ExportHighlights();
+                  })
             }
           >
             <ArrowDownToLine size={17} />
@@ -2939,15 +2974,15 @@ export default function App() {
                 onClick={() => {
                   const mode = exportOverlap;
                   setExportOverlap(null);
-                  const current = p?.export_settings;
                   void run(async () => {
-                    if (mode !== overlapMode)
-                      await api().SetExportSettings({
-                        codec: current?.codec ?? "h264",
-                        encoder: current?.encoder ?? "auto",
-                        bit_rate: current?.bit_rate ?? 0,
-                        overlap: mode,
-                      });
+                    // Only the overlap policy changes; trajectory / rally
+                    // label burn-in and encoding stay as the user set them.
+                    if (
+                      mode !== overlapMode &&
+                      !(await updateExportSettings({ overlap: mode }))
+                    )
+                      return;
+                    await exportSettingsQueue.current;
                     await api().ExportHighlights();
                   });
                 }}

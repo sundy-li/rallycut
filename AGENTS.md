@@ -28,7 +28,7 @@
 - `vision/pretrained.py`、`neural_analysis.py`、`inference_pipeline.py`：模型适配、分析管线、有界流水线。
 - `vision/rally_state.py`、`audio_features.py`：死球 / 再发球状态、视觉与声音融合；这些仍是规则。
 - `models/manifest.json`：模型、权重来源 / 哈希、许可和推理配置记录。
-- `skills/rallycut-video-json/`：skill 源模板；`scripts/build_skill.py` 从共享实现组装完整发行包，并交叉编译 `cmd/rallycut-cli`（5 个平台）到 `assets/bin/`。
+- `skills/rallycut/`：skill 源模板；`scripts/build_skill.py` 从共享实现组装完整发行包，并交叉编译 `cmd/rallycut-cli`（5 个平台）到 `assets/bin/`。
 - `backend/agent/`、`cmd/rallycut-cli/`：项目信息（`rallycut.project_brief`）、回合选择与导出计划；桌面“复制给 AI”和 skill 的 `plan` / `export` / `brief` 共用，导出复用 `backend/timeline` + `backend/export`。不要在 Python 里再写一份导出或缓冲合并。
 - `tests/`、`vision/tests/`：集成、UI、原生桌面、独立 skill 与视觉回归。
 - `docs/`：协议、架构、实际验证与限制；`plan.md` 是初始规划，不能当完成清单。
@@ -47,7 +47,7 @@ just test               # 前端构建、Go race、Python、skill、前端单测
 just test-go
 just test-skill
 just fmt
-just skill              # build/skills/rallycut-video-json/ 与同名 .skill
+just skill              # build/skills/rallycut/ 与同名 .skill
 just build              # 生产构建并复制到 build/release/RallyCut.app
 just run                # 启动独立生产版
 ```
@@ -59,7 +59,7 @@ just run                # 启动独立生产版
 npm --prefix frontend test
 go test -race ./backend/...
 python3 scripts/check_runtime_imports.py --source vision \
-  --installed build/skills/rallycut-video-json/assets/runtime
+  --installed build/skills/rallycut/assets/runtime
 ```
 
 UI 回归入口是 `tests/ui/test_workbench.py`，需 Playwright / Chrome 和其约定的本地 Vite 端口。原生检查是 `tests/desktop/test_launch.py` / `test_preview.py`，要求 macOS。按实际任务选测；文档-only 修改无需启动桌面或重跑模型。不要把浏览器绑定 fixture 测试当作真实原生 / 模型验收。
@@ -93,7 +93,7 @@ UI 回归入口是 `tests/ui/test_workbench.py`，需 Playwright / Chrome 和其
 - 球仍可见不代表回合仍有效：接球、捡球、回送不能自动连成同一回合。死球与再次发球要有可回放的证据。`rally_transits.py` 在可信侧视几何时按快速低位过台分段（`side-transit-v4`，见 `docs/side-transit-segmentation.md`）；其他时段（斜视框 / 移动镜头 / 无球桌）在球沿画面横向往返时由 `rally_serves.py` 按本视频自校准尺度的抛球发球 / 击球分段，看到发球前颠球则从颠球开始（`frame-serve-v8`，`start_reason=serve_prep`，见 `docs/spectator-frame-serves.md`）；该规则不能运行时斜视框才回退 `rally_activity.py` 的斜视活动规则；`ball_settled/activity_gap/transit_gap/stroke_gap` 不是触网/出界裁判事件，不得误报。结束需落在确认的观测时间，不能回溯到慢速窗口起点；局部持续恢复应撤销待结束，静止/准备碎片不能仅靠邻桌音频生成回合。见 `docs/activity-end-confirmation.md`。
 - 保留 `rally_events`、`end_reason/end_event_time/end_confidence`、`boundary_before/start_reason`；音频融合、流式候选和导出缓冲不能抹掉保护边界。
 - 识别边界与剪辑前后缓冲分开。显式手动合并 / 边界修正可覆盖自动判断。用户已确认重分析（含无缓存重跑）规则：未经人工修改的机器回合整体替换；人工添加（`manual-` ID）和人工修正（`edited=true`）的回合必须保留；与之重叠的新机器候选**也保留**（用户确认：人工与机器是两个独立来源，都要在列表显示），导出时由 `export_settings.overlap`（重叠对话框：人工覆盖分析 / 分析覆盖人工 / 合并 / 先后）决定用哪份。规则在 `Project.ApplyAnalysis`，不要退回“非空人工时间轴整表冻结”，也不要再丢弃重叠候选。只要当前回合列表为空且存在机器候选，就自动采用机器时间轴，包括人工删空，无需额外确认。
-- 项目 / 缓存 JSON 可原子更新；独立分析 JSON 和视频导出默认拒绝覆盖原片或已有输出，取消与失败不发布半成品。重启恢复为 interrupted，不能伪装已完成。
+- 项目 / 缓存 JSON 可原子更新；独立分析 JSON 拒绝覆盖已有输出；视频导出永远拒绝原片。用户已确认：桌面导出选中已有成片时，系统保存对话框（NSSavePanel / IFileSaveDialog）确认替换后即覆盖（`export.Options{Overwrite:true}`），新文件完整渲染并校验后原子替换；skill `export` 默认拒绝，显式 `--overwrite` 才替换。取消与失败不发布半成品、不动旧文件。重启恢复为 interrupted，不能伪装已完成。
 - 同时只运行一个分析或导出；Go 子进程使用参数数组 / context，取消后回收，不拼 shell 字符串。流水线线程异常需传播并停止，不无限阻塞队列。
 - macOS 编码用 `h264_videotoolbox` / `hevc_videotoolbox` 时采用码率，不混入软件 preset / CRF；硬件失败整批软件重做，不能混拼编码器。
 - 视频多选必须使用 Wails `OpenMultipleFilesDialog` 原生 Unicode 返回值，不能再用 PowerShell／osascript／zenity stdout 中转路径。此前 Windows 默认控制台编码会把中文变成 `?`；不得裁剪／解码／重写选中文件名或 UNC 前缀，不把对话框错误吞成取消。Windows CI 要跑真实 Unicode 项目导入、JSON 重开、Range 预览和 FFmpeg 导出；原生对话框点击与 Mac 共享盘可达性仍须人工验收。
@@ -112,4 +112,4 @@ UI 回归入口是 `tests/ui/test_workbench.py`，需 Playwright / Chrome 和其
 - 共享工作区可能被用户 / 其他 agent 同时修改。编辑前重读相关片段、保留无关修改；不重置仓库、不无意提交生成包。与本次任务相关的依赖清单缺项要一起修复。
 - 说明修改文件、实际跑过的验证及未验证范围；后台任务完成前不能写“已通过”。
 
-进一步阅读：`README.md`、`docs/architecture.md`、`docs/protocol.md`、`docs/dead-ball-rules.md`、`docs/throughput.md`、`docs/licenses.md`、`skills/rallycut-video-json/SKILL.md`。历史标定文档记录旧实现，不能覆盖本文件顶部的最新产品方向。
+进一步阅读：`README.md`、`docs/architecture.md`、`docs/protocol.md`、`docs/dead-ball-rules.md`、`docs/throughput.md`、`docs/licenses.md`、`skills/rallycut/SKILL.md`。历史标定文档记录旧实现，不能覆盖本文件顶部的最新产品方向。

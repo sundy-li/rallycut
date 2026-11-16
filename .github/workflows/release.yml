@@ -83,13 +83,23 @@ jobs:
           if find "$app" -type f | grep -Ei '\.(pt|pth|onnx|mp4|mov|mkv)$'; then
             echo 'Refusing model weights or source videos in app'; exit 1
           fi
+      - name: Build the agent skill package (rallycut-cli for all platforms)
+        env:
+          VERSION: ${{ needs.version.outputs.value }}
+        run: |
+          set -euo pipefail
+          python3 scripts/build_skill.py
+          cp build/skills/rallycut.skill "build/release/rallycut-skill-$VERSION.skill"
+          if unzip -l build/skills/rallycut.skill | grep -Ei '\.(pt|pth|onnx|mp4|mov|mkv|mlpackage)'; then
+            echo 'Refusing model weights or media in the skill'; exit 1
+          fi
       - name: Record SHA-256 checksum
         run: |
           python - <<'PY'
           import hashlib
           from pathlib import Path
-          root=Path('build/release');files=list(root.glob('RallyCut-*-macos-universal.zip'))
-          assert len(files)==1
+          root=Path('build/release');files=list(root.glob('RallyCut-*-macos-universal.zip'))+list(root.glob('rallycut-skill-*.skill'))
+          assert len(files)==2
           (root/'SHA256SUMS-macos.txt').write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n' for p in files))
           PY
       - uses: actions/upload-artifact@v4

@@ -18,7 +18,9 @@ def sha256(path):
 def verify(root, version):
     if not re.fullmatch(r'\d+\.\d+\.\d+-[A-Za-z0-9.-]+', version):
         raise ValueError('Invalid prerelease version')
-    mac = {f'RallyCut-{version}-macos-universal.zip'}
+    # The agent skill is built on the macOS runner (it bundles rallycut-cli
+    # for every platform) and listed in the macOS checksum file.
+    mac = {f'RallyCut-{version}-macos-universal.zip', f'rallycut-skill-{version}.skill'}
     win = {f'RallyCut-{version}-windows-amd64.exe',
            f'RallyCut-{version}-windows-amd64-setup.exe',
            'RallyCut-runtime-windows-amd64.zip', 'runtime-bundle.json'}

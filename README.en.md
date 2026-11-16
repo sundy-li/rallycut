@@ -40,6 +40,23 @@ The app interface is currently in Chinese.
 
 [Install and use](docs/getting-started.en.md) · [FAQ](docs/faq.en.md) · [Release notes](docs/releases.en.md)
 
+## Use it from an AI agent (the `rallycut` skill)
+
+`rallycut` is a skill for AI agents. It finds rallies, picks them and exports highlights without opening the desktop app, and it can take over a project you already analysed in the app.
+
+1. Get the skill: download `rallycut-skill-<version>.skill` (a zip file) from [Releases](https://github.com/sundy-li/rallycut/releases), or build it with `just skill` (output in `build/skills/rallycut/`; building needs Go and Python 3, running does not).
+2. Put the whole folder in your agent's skills directory, named `rallycut`:
+
+   ```bash
+   mkdir -p ~/.claude/skills && unzip rallycut-skill-*.skill -d ~/.claude/skills/
+   ```
+
+   Claude Code uses `~/.claude/skills/`, Codex `~/.codex/skills/`, others often `~/.agents/skills/`. If you installed the old `rallycut-video-json`, delete that folder; its prepared runtime and model are reused.
+3. Dependencies: re-cutting and exporting needs only Python 3 and FFmpeg. Analysing new videos also needs [uv](https://docs.astral.sh/uv/); the agent runs `setup --download-model` once (Python 3.12, PyTorch and a 6 MB model), after which it works offline.
+4. In the app, click **“复制给 AI”** (copy for AI) in the export bar, paste it to the agent and say what you want, e.g. “only the best 10 rallies, 2 s before and after, export to ~/Movies/highlights.mp4”. Or just give it a video file.
+
+The agent shows the cut plan first and exports after you confirm. It uses the same span merging and encoding code as the app, never overwrites source videos, and replaces an existing export only when you ask. See the [skill guide](skills/rallycut/SKILL.md) (Chinese).
+
 ---
 
 Developers (Chinese): [Development and tests](docs/development.md) · [Algorithms and experiments](docs/experiments.md) · [Publishing](docs/publishing.zh-CN.md) · [Licenses](docs/licenses.md)

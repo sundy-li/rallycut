@@ -14,7 +14,7 @@ class ReleaseVerifierTests(unittest.TestCase):
         self.addCleanup(directory.cleanup)
         self.root = Path(directory.name)
         self.version = '0.1.0-alpha.4'
-        self.mac = [f'RallyCut-{self.version}-macos-universal.zip']
+        self.mac = [f'RallyCut-{self.version}-macos-universal.zip', f'rallycut-skill-{self.version}.skill']
         self.win = [f'RallyCut-{self.version}-windows-amd64.exe',
                     f'RallyCut-{self.version}-windows-amd64-setup.exe',
                     'RallyCut-runtime-windows-amd64.zip', 'runtime-bundle.json']

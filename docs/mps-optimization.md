@@ -57,7 +57,7 @@
 
 ```bash
 just skill
-python3 build/skills/rallycut-video-json/scripts/rallycut.py analyze \
+python3 build/skills/rallycut/scripts/rallycut.py analyze \
   --input /absolute/match.mp4 --output /absolute/new.segments.json \
   --device mps --precision fp32 --batch-size 4
 ```

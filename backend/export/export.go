@@ -99,7 +99,20 @@ func spanOverlay(source project.Source, span timeline.Segment, labels []timeline
 	return spec, nil
 }
 
+// Options control how the finished file is published.
+type Options struct {
+	// Overwrite replaces an existing output file once the new export has been
+	// fully rendered and verified; a failed or cancelled export leaves the old
+	// file untouched. Source videos of the project are never replaced.
+	Overwrite bool
+}
+
+// Run exports without replacing an existing file.
 func Run(ctx context.Context, p *project.Project, output string, progress func(float64, string)) error {
+	return RunWith(ctx, p, output, Options{}, progress)
+}
+
+func RunWith(ctx context.Context, p *project.Project, output string, opts Options, progress func(float64, string)) error {
 	jobs, normalize, audio, fingerprints, err := collect(p)
 	if err != nil {
 		return err
@@ -114,8 +127,18 @@ func Run(ctx context.Context, p *project.Project, output string, progress func(f
 	if strings.ToLower(filepath.Ext(output)) != ".mp4" {
 		return fmt.Errorf("导出文件必须以 .mp4 结尾")
 	}
-	if _, err := os.Lstat(output); err == nil {
-		return fmt.Errorf("目标文件已存在，请使用新文件名（不会覆盖原文件）")
+	for path := range fingerprints {
+		if sameFile(path, output) {
+			return fmt.Errorf("不能把集锦导出到原视频上，请换一个文件名")
+		}
+	}
+	if info, err := os.Lstat(output); err == nil {
+		if !opts.Overwrite {
+			return fmt.Errorf("目标文件已存在，请使用新文件名（不会覆盖原文件）")
+		}
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("目标路径不是普通文件，不能覆盖：%s", filepath.Base(output))
+		}
 	} else if !os.IsNotExist(err) {
 		return err
 	}
@@ -197,7 +220,11 @@ func Run(ctx context.Context, p *project.Project, output string, progress func(f
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if err := publishCompleted(result, output); err != nil {
+	publish := publishCompleted
+	if opts.Overwrite {
+		publish = replaceCompleted
+	}
+	if err := publish(result, output); err != nil {
 		return fmt.Errorf("保存导出文件失败（目标可能已存在）: %w", err)
 	}
 	progress(1, "MP4 已导出；请回放确认音画同步")
@@ -326,4 +353,14 @@ func runWithInputDir(ctx context.Context, dir string, feed func(io.Writer) error
 		return fmt.Errorf("FFmpeg: %w: %s", waitErr, string(buf[:n]))
 	}
 	return ctx.Err()
+}
+
+// sameFile also catches a source reached through a different spelling or link.
+func sameFile(a, b string) bool {
+	x, errA := os.Stat(a)
+	y, errB := os.Stat(b)
+	if errA == nil && errB == nil {
+		return os.SameFile(x, y)
+	}
+	return filepath.Clean(a) == filepath.Clean(b)
 }
