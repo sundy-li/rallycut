@@ -93,6 +93,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 	trajectory := fs.Bool("trajectory", false, "burn in the ball trajectory (needs tracks: desktop project input only)")
 	labels := fs.Bool("rally-labels", false, "burn in rally numbers")
 	if err := fs.Parse(args[1:]); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return 0
+		}
 		return 2
 	}
 	if *input == "" {

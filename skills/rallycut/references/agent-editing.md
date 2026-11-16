@@ -5,7 +5,7 @@
 | `kind` | 来源 | 内容 |
 |---|---|---|
 | 无 `kind`，有 `schema_version` / `sources` | 桌面版项目 `*-rallycut.json` | 完整项目，含球轨迹；`--trajectory` 只能用它 |
-| `rallycut.project_brief` | 桌面版“复制给 AI”，或 `brief --input <项目>` | 全部素材与回合、剪辑参数、导出设置；不含轨迹 |
+| `rallycut.project_brief` | `brief --input <项目>` 的输出（桌面版“复制给 AI”只给项目文件路径） | 全部素材与回合、剪辑参数、导出设置；不含轨迹 |
 | `rallycut.segments` | `analyze` / `from-project` | 单个素材的回合候选；缓冲默认 0.5 / 0.8 秒 |
 
 所有素材都必须有 `path`、`duration`、`fingerprint`；导出前会重新计算原片指纹，不一致就拒绝。
@@ -50,7 +50,7 @@
 | 选项 | 作用 |
 |---|---|
 | `--max-rallies N` | 全项目最多 N 个：收藏优先，然后分数高、时长长 |
-| `--rallies k1,k2` | 只导出这些回合（`key` 或唯一的 `id`） |
+| `--rallies 12,15` | 只导出这些回合：卡片编号（多素材 `2:12`）、`key` 或唯一的 `id` |
 | `--favorites-only` | 只导出收藏 |
 | `--min-duration S` | 去掉短于 S 秒的回合 |
 | `--pre-roll S` / `--post-roll S` | 每个回合前 / 后保留秒数，0–60 |

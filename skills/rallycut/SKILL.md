@@ -9,7 +9,7 @@ description: 本地乒乓球比赛视频的回合识别与集锦剪辑，不需�
 
 | 用户给的 | 做法 | 需要的环境 |
 |---|---|---|
-| 从桌面版“复制给 AI”粘贴的文本（`# RallyCut 项目：…` + `rallycut.project_brief` JSON），或 `*-rallycut.json` 项目文件 | 直接[二次剪辑](#二次剪辑与导出)：`plan` → `export` | 系统 Python 3 + FFmpeg |
+| 从桌面版“复制给 AI”粘贴的文本（`# RallyCut 项目：…`，含项目文件路径和命令），或 `*-rallycut.json` 项目文件 | 直接[二次剪辑](#二次剪辑与导出)：`plan` → `export` | 系统 Python 3 + FFmpeg |
 | 只有比赛视频 | 先[新视频分析](#新视频分析)得到片段 JSON，再按需二次剪辑 | 另需 `setup`（PyTorch + 权重） |
 | 只要时间表 JSON | `analyze` 或 `from-project` | 同上 / 只需 FFprobe |
 
@@ -55,7 +55,7 @@ python3 "$SKILL_DIR/scripts/rallycut.py" analyze \
 
 `plan` / `export` / `brief` 运行随包的 `rallycut-cli`，与桌面版共用同一套回合时间轴、前后缓冲合并、死球边界保护、人工 / 机器重叠处理和 FFmpeg 导出代码，不需要 PyTorch 或权重。细节见 [二次剪辑参考](references/agent-editing.md)。
 
-`--input` 接受三种文件：桌面项目 `*-rallycut.json`、项目信息 `rallycut.project_brief`、`analyze` / `from-project` 输出的 `rallycut.segments`。用户粘贴的是“复制给 AI”的文本时，把其中 ```json 代码块原样存成文件（例如 `<项目目录>/brief.json`）再传入；文本里给了项目文件路径且用户没有改动需求时，直接用项目文件。
+`--input` 接受三种文件：桌面项目 `*-rallycut.json`、项目信息 `rallycut.project_brief`、`analyze` / `from-project` 输出的 `rallycut.segments`。用户粘贴的是“复制给 AI”的文本时，里面有项目文件路径，直接把它作为 `--input`；不要用文件读取工具打开项目文件（含大量球轨迹坐标），需要看回合列表时运行 `brief --input <项目文件>`。要改起止时间或增删回合时，把 `brief` 的输出存成新文件（如 `<项目目录>/brief.json`）再编辑、传入。回合编号 `n` 与桌面版回合卡片一致，`--rallies 12,15` 可直接用编号（多素材写 `2:12`）。
 
 1. **先出计划**，不编码，读 stdout 的 `rallycut.export_plan`：
 
@@ -77,7 +77,7 @@ python3 "$SKILL_DIR/scripts/rallycut.py" analyze \
 选择回合的方式（可组合）：
 
 - `--max-rallies N`：最多 N 个，优先收藏（`favorite`），其次分数高、时长长的；导出仍按时间顺序。`score` 是启发式排序分，不代表精彩程度经过评估，告诉用户这一点。
-- `--rallies key1,key2`：只导出这些回合，`key` 形如 `<素材 id>/<回合 id>`（brief 里每个回合都有），单素材时也可只写回合 `id`。
+- `--rallies 12,15`：只导出这些回合。可写回合卡片编号（单素材 `12`，多素材 `<素材序号>:<编号>` 如 `2:12`）、brief 里的 `key`（`<素材 id>/<回合 id>`），或唯一的回合 `id`。
 - `--favorites-only`、`--min-duration 秒`。
 - 改 JSON：把回合的 `selected` 设为 false / true，或修改 `start` / `end`（秒，必须在素材时长内）。被标为 `invalid` 的回合永远不导出。
 - 缓冲：`--pre-roll` / `--post-roll`（0–60 秒），默认取输入里的值（桌面项目设置；segments 文件为 0.5 / 0.8）。回合识别边界和缓冲是两回事，不要为了加缓冲去改 `start` / `end`。

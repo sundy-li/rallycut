@@ -1054,7 +1054,8 @@ func (a *App) StartSetup() setupenv.State {
 }
 
 // CopyAgentBrief puts the current project's rallies, padding and export
-// settings on the clipboard as Markdown + JSON for an AI agent (see
+// settings on the clipboard for an AI agent: a short summary, the project
+// file path and skill commands; the rally data stays in the file (see
 // backend/agent). It contains local file paths but no video or tracks.
 // Returns the copied text so the UI can show its size.
 func (a *App) CopyAgentBrief() (string, error) {

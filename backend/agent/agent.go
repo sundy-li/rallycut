@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"rallycut/backend/project"
@@ -56,7 +57,7 @@ type Brief struct {
 	Sources        []Source               `json:"sources"`
 }
 
-const briefNote = "Times are seconds on each source video's own timeline. Rallies are machine candidates unless human=true; review before claiming accuracy. To change the cut, edit selected / start / end here (or pass --rallies) and run the rallycut skill: plan first, then export to a new .mp4. Never overwrite source videos."
+const briefNote = "Times are seconds on each source video's own timeline. Rallies are machine candidates unless human=true; review before claiming accuracy. To change the cut, edit selected / start / end here or pass --rallies (card numbers like 12, or <source index>:<n>), then run the rallycut skill: plan first, then export. Never overwrite source videos."
 
 // NewBrief summarizes p. path is the project file, if saved.
 func NewBrief(p *project.Project, path string) Brief {
@@ -84,12 +85,12 @@ func NewBrief(p *project.Project, path string) Brief {
 
 func round(v float64) float64 { return math.Round(v*1000) / 1000 }
 
-// Markdown is the clipboard text: a short human/agent readable header, the
-// skill commands, and the brief JSON. It contains local paths, not video.
+// Markdown is the clipboard text for an agent: a short summary, the project
+// file and the skill commands. The rally data stays in the file; the agent
+// reads it with the skill (plan / brief) instead of from the clipboard.
 func Markdown(b Brief) (string, error) {
-	data, err := CompactJSON(b)
-	if err != nil {
-		return "", err
+	if b.ProjectPath == "" {
+		return "", errors.New("项目还没有保存到文件，请先保存项目")
 	}
 	total, selected, human := 0, 0, 0
 	for _, s := range b.Sources {
@@ -103,30 +104,24 @@ func Markdown(b Brief) (string, error) {
 			}
 		}
 	}
+	quoted := shellQuote(b.ProjectPath)
 	var w strings.Builder
 	fmt.Fprintf(&w, "# RallyCut 项目：%s\n\n", b.ProjectName)
-	if b.ProjectPath != "" {
-		fmt.Fprintf(&w, "- 项目文件：%s\n", b.ProjectPath)
-	}
-	fmt.Fprintf(&w, "- 素材 %d 个，回合 %d 个（导出选中 %d，人工添加 / 修改 %d）\n", len(b.Sources), total, selected, human)
-	fmt.Fprintf(&w, "- 剪辑参数：发球前保留 %.1f 秒，回合结束后保留 %.1f 秒；编码 %s，重叠处理 %s\n",
-		b.Rules.PreRoll, b.Rules.PostRoll, b.ExportSettings.Codec, b.ExportSettings.Overlap)
+	fmt.Fprintf(&w, "- 项目文件：%s\n", b.ProjectPath)
 	for i, s := range b.Sources {
-		fmt.Fprintf(&w, "- 素材 %d：%s（%s，%.0f 秒）\n", i+1, s.Video.Name, s.Video.Path, s.Video.Duration)
+		fmt.Fprintf(&w, "- 素材 %d：%s（%.0f 秒）\n", i+1, s.Video.Path, s.Video.Duration)
 	}
-	w.WriteString("\n回合是机器识别的候选，`human: true` 为用户添加或修改；时间单位是秒，都在各自素材的时间轴上。\n\n")
-	w.WriteString("## 用 rallycut skill 二次剪辑\n\n")
-	w.WriteString("把下面的 JSON 存为文件（如 `brief.json`），按需要改 `selected` / `start` / `end`，然后先看计划、再导出 .mp4（不会覆盖原片；替换已有成片需加 `--overwrite`）：\n\n")
-	w.WriteString("```bash\npython3 \"$SKILL_DIR/scripts/rallycut.py\" plan --input brief.json [--max-rallies 10] [--pre-roll 2] [--post-roll 1]\n")
-	w.WriteString("python3 \"$SKILL_DIR/scripts/rallycut.py\" export --input brief.json --output /absolute/path/highlights.mp4 [同样的选项]\n```\n\n")
-	if b.ProjectPath != "" {
-		w.WriteString("也可以直接用项目文件：`--input \"" + b.ProjectPath + "\"`（读取桌面版当前保存的时间轴）。\n\n")
-	}
-	w.WriteString("```json\n")
-	w.Write(data)
-	w.WriteString("\n```\n")
+	fmt.Fprintf(&w, "- 回合 %d 个（勾选导出 %d，人工添加 / 修改 %d）；发球前保留 %.1f 秒，结束后保留 %.1f 秒\n\n",
+		total, selected, human, b.Rules.PreRoll, b.Rules.PostRoll)
+	w.WriteString("请用 rallycut skill 处理这个项目文件，不要直接读取或修改它的内容。先出剪辑计划，确认后再导出：\n\n")
+	fmt.Fprintf(&w, "```bash\npython3 \"$SKILL_DIR/scripts/rallycut.py\" brief --input %s   # 查看回合列表（编号 n 与桌面版回合卡片一致）\n", quoted)
+	fmt.Fprintf(&w, "python3 \"$SKILL_DIR/scripts/rallycut.py\" plan --input %s --max-rallies 10 --pre-roll 2 --post-roll 1\n", quoted)
+	fmt.Fprintf(&w, "python3 \"$SKILL_DIR/scripts/rallycut.py\" export --input %s --max-rallies 10 --pre-roll 2 --post-roll 1 --output /absolute/path/highlights.mp4\n```\n", quoted)
 	return w.String(), nil
 }
+
+// shellQuote wraps a path for POSIX shells (paths here contain spaces).
+func shellQuote(s string) string { return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'" }
 
 // CompactJSON writes the brief with one rally per line: readable, and about
 // a third of the size of fully indented JSON in an agent's context.
@@ -397,6 +392,21 @@ func Apply(p *project.Project, s Selection) (int, error) {
 }
 
 func resolve(p *project.Project, key string) ([2]string, error) {
+	// Card numbers as users say them: "12" (single source) or "2:12"
+	// (source 2, rally 12), matching the brief's `n`.
+	if n, err := strconv.Atoi(key); err == nil {
+		if len(p.Sources) != 1 {
+			return [2]string{}, fmt.Errorf("项目有 %d 个素材，回合编号 %q 请写成 <素材序号>:<编号>，如 1:%d", len(p.Sources), key, n)
+		}
+		return byNumber(p, 1, n, key)
+	}
+	if source, number, ok := strings.Cut(key, ":"); ok {
+		si, errS := strconv.Atoi(source)
+		n, errN := strconv.Atoi(number)
+		if errS == nil && errN == nil {
+			return byNumber(p, si, n, key)
+		}
+	}
 	if source, rally, ok := strings.Cut(key, "/"); ok {
 		for _, s := range p.Sources {
 			if s.ID != source {
@@ -425,6 +435,19 @@ func resolve(p *project.Project, key string) ([2]string, error) {
 		return found[0], nil
 	}
 	return [2]string{}, fmt.Errorf("回合 ID %q 在多个素材中出现，请用 <素材 id>/<回合 id>", key)
+}
+
+func byNumber(p *project.Project, source, n int, key string) ([2]string, error) {
+	if source < 1 || source > len(p.Sources) {
+		return [2]string{}, fmt.Errorf("找不到素材序号 %q", key)
+	}
+	s := p.Sources[source-1]
+	rallies := append([]project.Rally(nil), s.Rallies...)
+	project.Sort(rallies)
+	if n < 1 || n > len(rallies) {
+		return [2]string{}, fmt.Errorf("找不到回合编号 %q（该素材共 %d 个回合）", key, len(rallies))
+	}
+	return [2]string{s.ID, rallies[n-1].ID}, nil
 }
 
 // PlanSpan is one output clip; rallies are 1-based numbers in its source.

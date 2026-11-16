@@ -61,8 +61,14 @@ func TestBriefNumbersRalliesAndRoundTrips(t *testing.T) {
 		t.Fatalf("brief round trip changed the plan: %+v vs %+v", plan, want)
 	}
 	text, err := Markdown(b)
-	if err != nil || !strings.Contains(text, "/projects/match-rallycut.json") || !strings.Contains(text, "rallycut.py\" export") {
+	if err != nil || !strings.Contains(text, "'/projects/match-rallycut.json'") || !strings.Contains(text, "rallycut.py\" export") {
 		t.Fatalf("markdown missing project path or commands: %v", err)
+	}
+	if strings.Contains(text, "```json") || strings.Contains(text, "visual-00002") {
+		t.Fatal("clipboard text must reference the file, not embed rally JSON")
+	}
+	if _, err := Markdown(NewBrief(sample(), "")); err == nil {
+		t.Fatal("unsaved project must not produce a brief without a file")
 	}
 }
 
@@ -92,6 +98,18 @@ func TestApplySelection(t *testing.T) {
 	n, err = Apply(p, Selection{Keys: []string{"s2/visual-00001", "manual-1"}})
 	if err != nil || n != 2 {
 		t.Fatal(n, err)
+	}
+	// Card numbers: source 1 is sorted 10 s, 40 s, 70 s, 80 s.
+	p = sample()
+	if _, err := Apply(p, Selection{Keys: []string{"2"}}); err == nil {
+		t.Fatal("bare number in a two-source project must fail")
+	}
+	n, err = Apply(p, Selection{Keys: []string{"1:2", "2:1", "1:4"}})
+	if err != nil || n != 2 { // 1:4 is invalid and never exported
+		t.Fatal(n, err)
+	}
+	if _, err := Apply(sample(), Selection{Keys: []string{"1:9"}}); err == nil {
+		t.Fatal("out-of-range number accepted")
 	}
 	pre, post := 2.0, 1.0
 	p = sample()

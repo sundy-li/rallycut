@@ -2051,6 +2051,12 @@ export default function App() {
                         playhead,
                         event.currentTarget.duration,
                       );
+                    // WebKit (the macOS WebView) decodes no picture for
+                    // preload="metadata" until playback starts, so a freshly
+                    // opened video showed a black box. A tiny seek makes it
+                    // fetch and paint the first frame without playing.
+                    else if (event.currentTarget.currentTime === 0)
+                      event.currentTarget.currentTime = 0.001;
                   }}
                   onTimeUpdate={(e) => {
                     const v = e.currentTarget;
@@ -2860,7 +2866,7 @@ export default function App() {
           <button
             className="button ghost agent-copy-button"
             disabled={disabled || !p}
-            title="复制回合列表、剪辑参数和 skill 命令（Markdown + JSON），粘贴给 AI agent 做二次剪辑；含本机文件路径，不含视频"
+            title="复制项目文件路径、回合概况和 rallycut skill 命令，粘贴给 AI agent 做二次剪辑；回合数据留在项目文件里，不含视频"
             onClick={async () => {
               setError("");
               try {

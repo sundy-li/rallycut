@@ -28,8 +28,9 @@
 - `vision/pretrained.py`、`neural_analysis.py`、`inference_pipeline.py`：模型适配、分析管线、有界流水线。
 - `vision/rally_state.py`、`audio_features.py`：死球 / 再发球状态、视觉与声音融合；这些仍是规则。
 - `models/manifest.json`：模型、权重来源 / 哈希、许可和推理配置记录。
+- `skills/INSTALL.md`、`scripts/install-skill.sh`：README 开头给 agent 的一句话安装入口；脚本从最新带 `rallycut-skill-*.skill` 的 Release 下载并按 `SHA256SUMS-macos.txt` 校验（可走国内加速节点），只写 skills 目录，不覆盖非 rallycut 的同名目录；改动 skill 包名或 Release 资产名时三处同步。
 - `skills/rallycut/`：skill 源模板；`scripts/build_skill.py` 从共享实现组装完整发行包，并交叉编译 `cmd/rallycut-cli`（5 个平台）到 `assets/bin/`。
-- `backend/agent/`、`cmd/rallycut-cli/`：项目信息（`rallycut.project_brief`）、回合选择与导出计划；桌面“复制给 AI”和 skill 的 `plan` / `export` / `brief` 共用，导出复用 `backend/timeline` + `backend/export`。不要在 Python 里再写一份导出或缓冲合并。
+- `backend/agent/`、`cmd/rallycut-cli/`：项目信息（`rallycut.project_brief`）、回合选择与导出计划。用户已确认：桌面“复制给 AI”只复制项目文件路径、概况和命令，不贴回合 JSON；agent 用 skill 的 `plan` / `export` / `brief` 读取，二者共用，导出复用 `backend/timeline` + `backend/export`。不要在 Python 里再写一份导出或缓冲合并。
 - `tests/`、`vision/tests/`：集成、UI、原生桌面、独立 skill 与视觉回归。
 - `docs/`：协议、架构、实际验证与限制；`plan.md` 是初始规划，不能当完成清单。
 
