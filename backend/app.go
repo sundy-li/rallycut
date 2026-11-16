@@ -14,6 +14,7 @@ import (
 	"time"
 
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
+	"rallycut/backend/agent"
 	"rallycut/backend/analysis"
 	"rallycut/backend/buildinfo"
 	exporter "rallycut/backend/export"
@@ -1047,6 +1048,28 @@ func (a *App) StartSetup() setupenv.State {
 	}
 	a.setup.Start(a.ctx)
 	return a.setup.Status()
+}
+
+// CopyAgentBrief puts the current project's rallies, padding and export
+// settings on the clipboard as Markdown + JSON for an AI agent (see
+// backend/agent). It contains local file paths but no video or tracks.
+// Returns the copied text so the UI can show its size.
+func (a *App) CopyAgentBrief() (string, error) {
+	a.mu.RLock()
+	p := project.Clone(a.current)
+	path := a.projectPath
+	a.mu.RUnlock()
+	if p == nil {
+		return "", fmt.Errorf("请先打开项目")
+	}
+	text, err := agent.Markdown(agent.NewBrief(p, path))
+	if err != nil {
+		return "", err
+	}
+	if err := wruntime.ClipboardSetText(a.ctx, text); err != nil {
+		return "", fmt.Errorf("写入剪贴板失败：%w", err)
+	}
+	return text, nil
 }
 
 // ImportModelWeights installs a locally downloaded copy of the pinned weights

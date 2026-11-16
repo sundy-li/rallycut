@@ -1,9 +1,17 @@
 ---
 name: rallycut-video-json
-description: 将本地乒乓球比赛视频识别为回合候选 JSON，或将已有 RallyCut 项目转换为精简片段 JSON。用于“视频切分成 JSON”“识别乒乓球回合”“输出片段起止时间”“不启动桌面应用分析视频”等请求。使用专用 BlurBall 预训练模型；完全本地运行，不需要 Go、Node 或 Wails。
+description: 本地乒乓球比赛视频的回合识别与集锦剪辑，不需要打开 RallyCut 桌面版。识别回合候选 JSON；读取用户从 RallyCut 复制的项目信息或项目文件；按要求挑选回合（最多 N 个、收藏、指定编号）、调整发球前 / 结束后保留秒数，先出剪辑计划再导出 MP4 集锦。用于“识别乒乓球回合”“视频切成片段 JSON”“帮我从这个 RallyCut 项目剪一版集锦”“只要最精彩的 10 个回合”“把前后缓冲改成 2 秒重新导出”等请求。使用专用 BlurBall 预训练模型；完全本地运行，不需要 Go、Node 或 Wails。
 ---
 
-# RallyCut 视频 → JSON
+# RallyCut：回合识别与集锦剪辑
+
+三类任务，按用户已有的东西选入口：
+
+| 用户给的 | 做法 | 需要的环境 |
+|---|---|---|
+| 从桌面版“复制给 AI”粘贴的文本（`# RallyCut 项目：…` + `rallycut.project_brief` JSON），或 `*-rallycut.json` 项目文件 | 直接[二次剪辑](#二次剪辑与导出)：`plan` → `export` | 系统 Python 3 + FFmpeg |
+| 只有比赛视频 | 先[新视频分析](#新视频分析)得到片段 JSON，再按需二次剪辑 | 另需 `setup`（PyTorch + 权重） |
+| 只要时间表 JSON | `analyze` 或 `from-project` | 同上 / 只需 FFprobe |
 
 使用本 skill 内置的 CLI，不要重新编写检测器，不要用固定时间窗口伪造识别结果。默认直接整帧检测乒乓球，不要求先标定球桌；不是通用场景切镜头工具。无几何时不猜测触网 / 出界，回合候选仍需复核。
 
@@ -43,6 +51,43 @@ python3 "$SKILL_DIR/scripts/rallycut.py" analyze \
 - 默认 `--decoder opencv`。仅明确要求硬解实验时，在 macOS 执行 `setup --with-decoder` 后加 `--decoder videotoolbox`；必须确认摘要 `hardware_decode: true`。实验色彩转换可能改变轨迹/边界且不保证更快，不能无提示切换或宣称逐位一致。缺依赖/未启用硬解时明确报错，去掉参数回到默认路径。
 - 取消时终止运行命令；CLI 清理自有 FFmpeg 进程和临时音频，不发布残缺 JSON。输出已存在时拒绝覆盖，改用新文件名。
 
+## 二次剪辑与导出
+
+`plan` / `export` / `brief` 运行随包的 `rallycut-cli`，与桌面版共用同一套回合时间轴、前后缓冲合并、死球边界保护、人工 / 机器重叠处理和 FFmpeg 导出代码，不需要 PyTorch 或权重。细节见 [二次剪辑参考](references/agent-editing.md)。
+
+`--input` 接受三种文件：桌面项目 `*-rallycut.json`、项目信息 `rallycut.project_brief`、`analyze` / `from-project` 输出的 `rallycut.segments`。用户粘贴的是“复制给 AI”的文本时，把其中 ```json 代码块原样存成文件（例如 `<项目目录>/brief.json`）再传入；文本里给了项目文件路径且用户没有改动需求时，直接用项目文件。
+
+1. **先出计划**，不编码，读 stdout 的 `rallycut.export_plan`：
+
+   ```bash
+   python3 "$SKILL_DIR/scripts/rallycut.py" plan --input "/absolute/brief.json" \
+     --max-rallies 10 --pre-roll 2 --post-roll 1
+   ```
+
+2. 向用户复述计划：片段数、总时长、用了哪些回合（`spans[].rallies` 是各素材内的回合编号 `n`）和缓冲秒数。用户的要求含糊（“精彩的”“短一点”）时，说明你采用的筛选方式。
+3. **再导出**，参数与计划一致，输出必须是新的 `.mp4`：
+
+   ```bash
+   python3 "$SKILL_DIR/scripts/rallycut.py" export --input "/absolute/brief.json" \
+     --max-rallies 10 --pre-roll 2 --post-roll 1 --output "/absolute/highlights.mp4"
+   ```
+
+   stderr 是 JSONL 进度，stdout 最后一行 `{"status":"completed","output":…,"clips":…,"duration":…}`。几十个回合可能要几分钟，用后台任务等完成。
+
+选择回合的方式（可组合）：
+
+- `--max-rallies N`：最多 N 个，优先收藏（`favorite`），其次分数高、时长长的；导出仍按时间顺序。`score` 是启发式排序分，不代表精彩程度经过评估，告诉用户这一点。
+- `--rallies key1,key2`：只导出这些回合，`key` 形如 `<素材 id>/<回合 id>`（brief 里每个回合都有），单素材时也可只写回合 `id`。
+- `--favorites-only`、`--min-duration 秒`。
+- 改 JSON：把回合的 `selected` 设为 false / true，或修改 `start` / `end`（秒，必须在素材时长内）。被标为 `invalid` 的回合永远不导出。
+- 缓冲：`--pre-roll` / `--post-roll`（0–60 秒），默认取输入里的值（桌面项目设置；segments 文件为 0.5 / 0.8）。回合识别边界和缓冲是两回事，不要为了加缓冲去改 `start` / `end`。
+
+编码相关：`--codec h264|hevc`、`--encoder auto|software`（macOS 默认 VideoToolbox，失败整批改软件编码）、`--bit-rate`（0 跟随原片）、`--overlap merge|sequential|human|machine`（人工与机器回合重叠时保留哪个）、`--rally-labels`（左上角烧录回合编号）、`--trajectory`（烧录球轨迹，只有桌面项目文件带轨迹）。
+
+不变的规则：输出已存在就失败，换新文件名，不覆盖、不删除原片；原片内容指纹不符（被替换或修改）时拒绝导出；不要自己拼 ffmpeg 命令绕过这些检查。
+
+`brief --input <项目.json> [--markdown]` 可在没有桌面版时生成同样的项目信息，用于查看回合列表或交给另一个 agent。
+
 ## 复用已分析项目
 
 用户已有 `*-rallycut.json` 时，优先避免重复推理；此转换仅需系统 Python 3 + FFprobe，不必安装 PyTorch 或下载权重：
@@ -61,4 +106,5 @@ python3 "$SKILL_DIR/scripts/rallycut.py" from-project \
 2. 检查结果 `kind == rallycut.segments`、时间单位为秒、时间范围在原片内、`review_required == true`。格式细节见 [输出规范](references/output-schema.md)。
 3. 向用户提供 JSON 文件路径、候选数量、采用的新分析 / 项目复用方式，以及关键警告。不要只展示内部轨迹数量。
 4. 始终称其为**回合候选**：球检测是预训练模型，回合切分仍含轨迹 / 声音规则；置信度不是准确率，零候选也是真实可接受结果。无独立标注时不能声称准确率、召回率或每个回合均正确。
-5. 若用户要真正剪出视频，此 skill 只提供时间表；另行确认编码、缓冲和输出位置，再使用视频导出工具，不能擅自删除原片或执行大批量编码。
+5. 若用户要真正剪出视频，用上面的 `plan` → `export`；确认缓冲、回合数量和输出位置后再导出，不能擅自删除原片。
+6. 导出完成后报告输出路径、片段数、总时长和所用筛选条件，提醒用户回放确认。

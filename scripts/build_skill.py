@@ -5,7 +5,9 @@ import importlib.util
 import hashlib
 import json
 from pathlib import Path
+import os
 import shutil
+import subprocess
 import tempfile
 import zipfile
 _spec=importlib.util.spec_from_file_location('rallycut_runtime_import_check',Path(__file__).with_name('check_runtime_imports.py'))
@@ -21,7 +23,30 @@ RUNTIME_FILES=(
     'vendor/blurball/network.py','vendor/blurball/config.json',
     'vendor/blurball/LICENSE.md','vendor/blurball/HRNET-LICENSE','vendor/blurball/NOTICE.md',
 )
-SKILL_FILES=('SKILL.md','scripts/rallycut.py','references/output-schema.md','references/setup.md')
+SKILL_FILES=('SKILL.md','scripts/rallycut.py','references/output-schema.md','references/setup.md','references/agent-editing.md')
+# rallycut-cli (cmd/rallycut-cli): plan / export / brief with the desktop's own
+# timeline and FFmpeg export code. Pure Go, cross-compiled; no Go at runtime.
+TOOL_PLATFORMS=('darwin-arm64','darwin-amd64','linux-amd64','linux-arm64','windows-amd64')
+
+
+def build_tools(target):
+    """Cross-compile rallycut-cli into target/<os>-<arch>/; returns {relative: sha256}."""
+    go=shutil.which('go')
+    if not go:
+        raise ValueError('Go is required to build the skill package (not to run it)')
+    flags=subprocess.run(['bash',str(REPO/'scripts/build-ldflags.sh')],check=True,capture_output=True,text=True,cwd=REPO).stdout
+    tools={}
+    for platform in TOOL_PLATFORMS:
+        goos,goarch=platform.split('-')
+        name='rallycut-cli.exe' if goos=='windows' else 'rallycut-cli'
+        out=target/platform/name
+        out.parent.mkdir(parents=True,exist_ok=True)
+        env={**os.environ,'GOOS':goos,'GOARCH':goarch,'CGO_ENABLED':'0'}
+        subprocess.run([go,'build','-trimpath','-buildvcs=false','-ldflags','-s -w '+flags,'-o',str(out),'./cmd/rallycut-cli'],
+                       check=True,cwd=REPO,env=env)
+        out.chmod(0o755)
+        tools[out.relative_to(target.parent).as_posix()]=hashlib.sha256(out.read_bytes()).hexdigest()
+    return tools
 
 
 def build(output):
@@ -56,7 +81,10 @@ def build(output):
             checks[relative]=hashlib.sha256(target.read_bytes()).hexdigest()
         check_runtime_imports(REPO/'vision',runtime)
         digest=hashlib.sha256(''.join(f'{path}\0{checks[path]}\n' for path in sorted(checks)).encode()).hexdigest()
-        (runtime/'runtime-manifest.json').write_text(json.dumps({'schema_version':1,'digest':digest,'files':checks},indent=2)+'\n')
+        # Tools are hashed separately: rebuilding the CLI must not move the
+        # Python runtime cache, which is keyed by `digest`.
+        tools=build_tools(stage/'assets/bin')
+        (runtime/'runtime-manifest.json').write_text(json.dumps({'schema_version':1,'digest':digest,'files':checks,'tools':tools},indent=2)+'\n')
         folder=output/NAME
         if folder.exists():
             shutil.rmtree(folder)

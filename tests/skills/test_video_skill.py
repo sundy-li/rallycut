@@ -142,8 +142,11 @@ class PortableSkillTests(unittest.TestCase):
             self.assertTrue(any(n.endswith('assets/runtime/headless.py') for n in names))
             self.assertTrue(any(n.endswith('vendor/blurball/HRNET-LICENSE') for n in names))
             self.assertFalse(any(Path(n).suffix in ('.pth','.pt','.mp4','.onnx','.pyc') for n in names))
-            # Source-only sanity bound: weights / media are MB-scale.
-            self.assertLess(sum(item.file_size for item in archive.infolist()),300000)
+            # Source-only sanity bound outside the CLI binaries: weights / media are MB-scale.
+            tools=[item for item in archive.infolist() if '/assets/bin/' in item.filename]
+            self.assertEqual({Path(item.filename).parent.name for item in tools},set(builder.TOOL_PLATFORMS))
+            self.assertLess(sum(item.file_size for item in archive.infolist() if item not in tools),300000)
+            self.assertTrue(all(item.external_attr>>16&0o111 for item in tools),'CLI must stay executable in the archive')
         self.assertFalse((self.installed/'go.mod').exists())
         self.assertFalse((self.installed/'frontend').exists())
 
@@ -196,6 +199,53 @@ class PortableSkillTests(unittest.TestCase):
         self.assertNotEqual(run.returncode,0)
         self.assertFalse(missing.exists())
         self.assertEqual(run.stdout,'')
+
+    @unittest.skipUnless(shutil.which('ffmpeg') and shutil.which('ffprobe'),'FFmpeg required')
+    def test_plan_and_export_need_no_python_runtime_and_never_overwrite(self):
+        video=self.root/'练习 场.mp4'
+        subprocess.run(['ffmpeg','-v','error','-y','-f','lavfi','-i','testsrc=s=320x180:r=30:d=6','-f','lavfi','-i','sine=d=6',
+                        '-shortest','-c:v','libx264','-c:a','aac',str(video)],check=True)
+        source=headless.probe(video,headless.Deadline(10))
+        rallies=[{'id':'visual-00001','start':1,'end':2,'confidence':.5,'score':20,'selected':True},
+                 {'id':'visual-00002','start':3.5,'end':5,'confidence':.5,'score':60,'selected':True}]
+        segments=self.root/'agent-segments.json'
+        segments.write_text(json.dumps({'schema_version':1,'kind':'rallycut.segments','source':source,'model':MODEL,'segments':rallies}))
+        env=self.env.copy();env.pop('RALLYCUT_SKILL_PYTHON')
+        run=self.invoke('plan','--input',str(segments),'--max-rallies','1','--pre-roll','0.5','--post-roll','0.5',env=env)
+        self.assertEqual(run.returncode,0,run.stderr)
+        plan=json.loads(run.stdout)
+        self.assertEqual(plan['kind'],'rallycut.export_plan')
+        self.assertEqual([(s['start'],s['end'],s['rallies']) for s in plan['spans']],[(3.0,5.5,[2])])
+        output=self.root/'highlights 1.mp4'
+        run=self.invoke('export','--input',str(segments),'--max-rallies','1','--pre-roll','0.5','--post-roll','0.5',
+                        '--encoder','software','--output',str(output),env=env)
+        self.assertEqual(run.returncode,0,run.stderr)
+        self.assertEqual(json.loads(run.stdout.splitlines()[-1])['status'],'completed')
+        self.assertAlmostEqual(headless.probe(output,headless.Deadline(10))['duration'],2.5,delta=.35)
+        run=self.invoke('export','--input',str(segments),'--output',str(output),env=env)
+        self.assertNotEqual(run.returncode,0)
+        self.assertIn('已存在',run.stderr)
+        run=self.invoke('export','--input',str(segments),'--output',str(video),env=env)
+        self.assertNotEqual(run.returncode,0)
+        self.assertEqual(source['fingerprint'],hashlib.sha256(video.read_bytes()).hexdigest(),'source must be untouched')
+        run=self.invoke('brief','--input',str(segments),env=env)
+        self.assertEqual(json.loads(run.stdout)['kind'],'rallycut.project_brief')
+
+    def test_tampered_cli_is_refused(self):
+        manifest=json.loads((self.installed/'assets/runtime/runtime-manifest.json').read_text())
+        relative=next(iter(manifest['tools']))
+        target=self.installed/'assets'/relative
+        data=target.read_bytes()
+        try:
+            for path in (self.installed/'assets/bin').rglob('rallycut-cli*'):
+                path.write_bytes(path.read_bytes()+b'tamper')
+            run=self.invoke('plan','--input','unused.json')
+            self.assertNotEqual(run.returncode,0)
+            self.assertIn('checksum mismatch',run.stderr)
+        finally:
+            for path in (self.installed/'assets/bin').rglob('rallycut-cli*'):
+                path.write_bytes(path.read_bytes()[:-len(b'tamper')])
+        self.assertEqual(target.read_bytes(),data)
 
     def test_inference_options_are_exposed_and_fail_before_reading_input(self):
         help=self.invoke('analyze','--help')

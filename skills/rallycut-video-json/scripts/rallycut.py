@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
-"""Portable skill launcher. Bootstrap only on explicit setup; no repo lookup."""
+"""Portable skill launcher. Bootstrap only on explicit setup; no repo lookup.
+
+analyze / doctor / from-project run the bundled Python runtime. plan / export /
+brief run the bundled rallycut-cli binary (same timeline and FFmpeg export code
+as the desktop app) and need only FFmpeg, not PyTorch or model weights.
+"""
 import argparse
 import hashlib
 import json
 import os
 from pathlib import Path
+import platform
 import shutil
 import subprocess
 import sys
@@ -39,12 +45,43 @@ def environment():
     return home,venv,python,weights,data['digest']
 
 
+TOOL_COMMANDS=('plan','export','brief')
+
+
+def tool():
+    """Verified rallycut-cli for this OS / CPU."""
+    manifest=RUNTIME/'runtime-manifest.json'
+    if not manifest.is_file():
+        raise ValueError('Missing bundled runtime. Install the packaged skill folder (build/skills/rallycut-video-json), not the source template; build with just skill.')
+    tools=json.loads(manifest.read_text(encoding='utf-8')).get('tools',{})
+    goos={'darwin':'darwin','win32':'windows'}.get(sys.platform,'linux' if sys.platform.startswith('linux') else sys.platform)
+    machine=platform.machine().lower()
+    goarch={'x86_64':'amd64','amd64':'amd64','arm64':'arm64','aarch64':'arm64'}.get(machine,machine)
+    relative=f'bin/{goos}-{goarch}/rallycut-cli'+('.exe' if goos=='windows' else '')
+    if relative not in tools:
+        raise ValueError(f'No bundled rallycut-cli for {goos}-{goarch}; supported: {", ".join(sorted(tools))}')
+    path=ROOT/'assets'/relative
+    if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest()!=tools[relative]:
+        raise ValueError(f'Bundled tool checksum mismatch: {relative}; reinstall skill')
+    if os.name!='nt' and not os.access(path,os.X_OK):
+        path.chmod(0o755)  # some skill installers drop the executable bit
+    return path
+
+
 def main():
-    parser=argparse.ArgumentParser(description='Self-contained RallyCut skill: setup / doctor / analyze / from-project')
-    parser.add_argument('command',choices=['setup','doctor','analyze','from-project'])
+    parser=argparse.ArgumentParser(description='Self-contained RallyCut skill: setup / doctor / analyze / from-project / plan / export / brief')
+    parser.add_argument('command',choices=['setup','doctor','analyze','from-project',*TOOL_COMMANDS])
     args=parser.parse_args(sys.argv[1:2])
     remaining=sys.argv[2:]
     try:
+        if args.command in TOOL_COMMANDS:
+            binary=tool()
+            if '--help' in remaining or '-h' in remaining:
+                return subprocess.call([str(binary),args.command,'-h'])
+            # exec: cancellation / timeouts reach the FFmpeg-owning process.
+            if os.name=='nt':
+                return subprocess.call([str(binary),args.command,*remaining])
+            os.execv(str(binary),[str(binary),args.command,*remaining])
         home,venv,python,weights,digest=environment()
         if args.command=='setup':
             setup=argparse.ArgumentParser(description='Explicit dependency preparation; video is never uploaded')
@@ -76,7 +113,8 @@ def main():
         if not python.is_file():
             if args.command=='doctor':
                 emit({'ready':False,'missing':['skill Python runtime'],'setup_required':True,
-                      'command':[sys.executable,str(Path(__file__).resolve()),'setup','--download-model']})
+                      'command':[sys.executable,str(Path(__file__).resolve()),'setup','--download-model'],
+                      'note':'setup is only needed to analyze new videos; plan / export / brief work without it (FFmpeg required)'})
                 return 1
             raise ValueError('Skill runtime not prepared. Run this launcher with setup --download-model first; no automatic downloads are performed during analysis.')
         env=os.environ.copy()

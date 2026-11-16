@@ -40,6 +40,8 @@ interface Backend {
   SplitRally(id: string, at: number): Promise<Project>;
   MergeRallies(ids: string[]): Promise<Project>;
   ExportHighlights(): Promise<Job>;
+  /** Copy the project brief (Markdown + JSON) for an AI agent; returns it. */
+  CopyAgentBrief(): Promise<string>;
   /** Select the current project's completed export in Finder / Explorer. */
   RevealExport(): Promise<void>;
   RefreshDependencies(): Promise<State>;

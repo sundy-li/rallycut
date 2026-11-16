@@ -69,7 +69,7 @@ just run
 just skill
 ```
 
-完整发行目录为 `build/skills/rallycut-video-json/`，可复制到仓库外运行，不依赖 Go / Node / Wails。用户显式准备模型后离线分析；`from-project` 是项目转换，不是最新模型重跑。操作说明见 [skill 规范](../skills/rallycut-video-json/SKILL.md)。
+完整发行目录为 `build/skills/rallycut-video-json/`，可复制到仓库外运行，不依赖 Go / Node / Wails。打包时需要 Go：`build_skill.py` 把 `cmd/rallycut-cli` 交叉编译为 darwin-arm64 / darwin-amd64 / linux-amd64 / linux-arm64 / windows-amd64（纯 Go，`CGO_ENABLED=0`），哈希写进 `runtime-manifest.json` 的 `tools`（不进入 Python 运行时摘要），启动器执行前校验。`plan` / `export` / `brief` 复用桌面的 `backend/agent`、`backend/timeline`、`backend/export`，所以 skill 导出与桌面导出按钮渲染同一组片段。用户显式准备模型后离线分析；`from-project` 是项目转换，不是最新模型重跑。操作说明见 [skill 规范](../skills/rallycut-video-json/SKILL.md)。
 
 ## Windows 本地构建与平台回归
 

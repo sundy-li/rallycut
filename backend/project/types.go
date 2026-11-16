@@ -390,11 +390,14 @@ func NewAt(v Video, at time.Time) *Project {
 		Video: v, Sources: []Source{{ID: id, Video: v, RawRallies: []Rally{}, Rallies: []Rally{}, Tracks: []BallTrack{}}},
 		ActiveSourceID: id,
 		RawRallies:     []Rally{}, Rallies: []Rally{},
-		Rules:          Rules{PreRoll: .5, PostRoll: .8, MinDuration: 6},
+		Rules:          DefaultRules(),
 		ExportSettings: ExportSettings{}.Normalized(),
 		UpdatedAt:      time.Now().UTC().Format(time.RFC3339),
 	}
 }
+
+// DefaultRules is the padding a new project starts with.
+func DefaultRules() Rules { return Rules{PreRoll: .5, PostRoll: .8, MinDuration: 6} }
 
 func Finite(v float64) bool { return !math.IsNaN(v) && !math.IsInf(v, 0) }
 

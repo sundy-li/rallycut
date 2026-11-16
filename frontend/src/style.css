@@ -1558,6 +1558,13 @@ kbd {
   gap: 8px;
   font-size: 12px;
 }
+.agent-copy-button {
+  padding: 8px 12px;
+  gap: 6px;
+  font-size: 12px;
+  min-width: 112px;
+  justify-content: center;
+}
 .workspace-footnote {
   display: none;
 }

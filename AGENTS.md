@@ -28,7 +28,8 @@
 - `vision/pretrained.py`、`neural_analysis.py`、`inference_pipeline.py`：模型适配、分析管线、有界流水线。
 - `vision/rally_state.py`、`audio_features.py`：死球 / 再发球状态、视觉与声音融合；这些仍是规则。
 - `models/manifest.json`：模型、权重来源 / 哈希、许可和推理配置记录。
-- `skills/rallycut-video-json/`：skill 源模板；`scripts/build_skill.py` 从共享实现组装完整发行包。
+- `skills/rallycut-video-json/`：skill 源模板；`scripts/build_skill.py` 从共享实现组装完整发行包，并交叉编译 `cmd/rallycut-cli`（5 个平台）到 `assets/bin/`。
+- `backend/agent/`、`cmd/rallycut-cli/`：项目信息（`rallycut.project_brief`）、回合选择与导出计划；桌面“复制给 AI”和 skill 的 `plan` / `export` / `brief` 共用，导出复用 `backend/timeline` + `backend/export`。不要在 Python 里再写一份导出或缓冲合并。
 - `tests/`、`vision/tests/`：集成、UI、原生桌面、独立 skill 与视觉回归。
 - `docs/`：协议、架构、实际验证与限制；`plan.md` 是初始规划，不能当完成清单。
 
@@ -88,7 +89,7 @@ UI 回归入口是 `tests/ui/test_workbench.py`，需 Playwright / Chrome 和其
 
 ## 分段、编辑与导出
 
-- 参数方向已确认：发球前 / 回合结束后保留秒数，以及最多保留多少个回合。用户已澄清“回合板”指**回合数量，不是击球板数**。原生已有 `pre_roll/post_roll`，但 skill 参数和数量限制尚未统一完成，不要重复追问或声称已交付。
+- 参数方向已确认：发球前 / 回合结束后保留秒数，以及最多保留多少个回合。用户已澄清“回合板”指**回合数量，不是击球板数**。原生有 `pre_roll/post_roll`；skill 的 `plan` / `export` 提供 `--pre-roll/--post-roll/--max-rallies`（收藏优先、再按分数和时长排序；排序口径是实现选择，用户可改用 `--rallies` 指定），桌面界面没有数量上限选项。
 - 球仍可见不代表回合仍有效：接球、捡球、回送不能自动连成同一回合。死球与再次发球要有可回放的证据。`rally_transits.py` 在可信侧视几何时按快速低位过台分段（`side-transit-v4`，见 `docs/side-transit-segmentation.md`）；其他时段（斜视框 / 移动镜头 / 无球桌）在球沿画面横向往返时由 `rally_serves.py` 按本视频自校准尺度的抛球发球 / 击球分段，看到发球前颠球则从颠球开始（`frame-serve-v8`，`start_reason=serve_prep`，见 `docs/spectator-frame-serves.md`）；该规则不能运行时斜视框才回退 `rally_activity.py` 的斜视活动规则；`ball_settled/activity_gap/transit_gap/stroke_gap` 不是触网/出界裁判事件，不得误报。结束需落在确认的观测时间，不能回溯到慢速窗口起点；局部持续恢复应撤销待结束，静止/准备碎片不能仅靠邻桌音频生成回合。见 `docs/activity-end-confirmation.md`。
 - 保留 `rally_events`、`end_reason/end_event_time/end_confidence`、`boundary_before/start_reason`；音频融合、流式候选和导出缓冲不能抹掉保护边界。
 - 识别边界与剪辑前后缓冲分开。显式手动合并 / 边界修正可覆盖自动判断。用户已确认重分析（含无缓存重跑）规则：未经人工修改的机器回合整体替换；人工添加（`manual-` ID）和人工修正（`edited=true`）的回合必须保留；与之重叠的新机器候选**也保留**（用户确认：人工与机器是两个独立来源，都要在列表显示），导出时由 `export_settings.overlap`（重叠对话框：人工覆盖分析 / 分析覆盖人工 / 合并 / 先后）决定用哪份。规则在 `Project.ApplyAnalysis`，不要退回“非空人工时间轴整表冻结”，也不要再丢弃重叠候选。只要当前回合列表为空且存在机器候选，就自动采用机器时间轴，包括人工删空，无需额外确认。

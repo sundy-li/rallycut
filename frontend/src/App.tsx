@@ -18,6 +18,7 @@ import {
   Keyboard,
   Settings,
   Clapperboard,
+  ClipboardCopy,
   FileVideo,
   FolderOpen,
   HardDrive,
@@ -190,6 +191,8 @@ export default function App() {
   const [projectNameDraft, setProjectNameDraft] = useState("");
   const renameCancelled = useRef(false);
   const [pending, setPending] = useState(false);
+  // Transient result of "copy for AI agent": shown on the button, then cleared.
+  const [briefCopied, setBriefCopied] = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "error">(
     "idle",
   );
@@ -2822,6 +2825,24 @@ export default function App() {
               </label>
             ))}
           </fieldset>
+          <button
+            className="button ghost agent-copy-button"
+            disabled={disabled || !p}
+            title="复制回合列表、剪辑参数和 skill 命令（Markdown + JSON），粘贴给 AI agent 做二次剪辑；含本机文件路径，不含视频"
+            onClick={async () => {
+              setError("");
+              try {
+                const text = await api().CopyAgentBrief();
+                setBriefCopied(`已复制 ${Math.ceil(text.length / 1024)} KB`);
+              } catch (e) {
+                setError(String(e));
+              }
+              window.setTimeout(() => setBriefCopied(""), 3000);
+            }}
+          >
+            <ClipboardCopy size={15} />
+            <span aria-live="polite">{briefCopied || "复制给 AI"}</span>
+          </button>
           <button
             className="button primary export-button"
             disabled={disabled || !allSelected}

@@ -8,7 +8,7 @@
 
 ## 依赖
 
-`from-project` 转换已有已验证项目只需系统 Python 3 和 FFprobe，无须 uv / PyTorch / 本地权重。以下安装依赖针对新视频 `analyze`。
+`plan` / `export` / `brief`（二次剪辑与导出）只需系统 Python 3 和 FFmpeg / FFprobe：它们运行随包的 `assets/bin/<系统>-<CPU>/rallycut-cli`（macOS arm64 / x86_64、Linux x86_64 / arm64、Windows x64），每次执行前校验 SHA-256。`from-project` 转换已有已验证项目只需系统 Python 3 和 FFprobe。两者都无须 uv / PyTorch / 本地权重。以下安装依赖针对新视频 `analyze`。
 
 - 引导命令使用系统 Python 3；`uv` 准备隔离的 Python 3.12 环境。
 - `uv` 仅在显式 `setup` 时使用；安装说明：https://docs.astral.sh/uv/ 。
