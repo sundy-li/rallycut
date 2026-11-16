@@ -36,6 +36,18 @@ def locate_weights():
     raise ValueError('未安装本地视觉模型权重，请运行 just setup-model；不会退回传统视觉或模拟结果')
 
 
+def normalize_input(batch):
+    """ImageNet-normalize an (n,9,288,512) float32 batch of 0-255 RGB values.
+
+    Shared by the in-process accelerated path and the Core ML child process
+    (coreml_process.py), so both produce bit-identical model inputs.
+    """
+    import numpy as np
+    mean=np.array([.485,.456,.406]*3,dtype='float32').reshape(1,9,1,1)
+    std=np.array([.229,.224,.225]*3,dtype='float32').reshape(1,9,1,1)
+    return (batch/255.0-mean)/std
+
+
 class BlurBallDetector:
     def __init__(self, weights=None, device='auto', threshold=.7, precision='fp32', runtime='auto'):
         from backends import create_backend
@@ -167,11 +179,13 @@ class BlurBallDetector:
                     raise ValueError('inconsistent frame dtype or dimensions')
                 batch[index,frame*3:(frame+1)*3]=pair[0]
         if dtype==np.dtype('uint8'):
-            batch=batch/255.0
+            return normalize_input(batch)
         return (batch-self._np_mean)/self._np_std
 
     def predict_heatmaps(self, windows):
         if self.backend is not None:
+            if hasattr(self.backend,'predict_windows'):
+                return self.backend.predict_windows(windows)
             return self.backend.predict(self.prepare_input(windows))
         """GPU-only phase; the calling thread owns MPS and the CPU transfer."""
         import torch

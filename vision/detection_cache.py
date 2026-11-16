@@ -22,7 +22,7 @@ VERSION=1
 _HERE=Path(__file__).resolve().parent
 # Everything that runs before TrackingStage (decode, shot / geometry monitor,
 # model, audio impacts).  rally_*, play_area, visual.update_tracks are L1/L2.
-L0_SOURCES=('pretrained.py','backends.py','coreml_model.py','video_decode.py','shot_boundary.py','table_locator.py','table_jump.py',
+L0_SOURCES=('pretrained.py','backends.py','coreml_model.py','coreml_process.py','video_decode.py','shot_boundary.py','table_locator.py','table_jump.py',
             'net_geometry.py','audio_features.py','inference_pipeline.py','vendor/blurball/network.py',
             'vendor/blurball/config.json')
 

@@ -116,6 +116,14 @@ def create_backend(runtime=None):
             continue
         try:
             if kind == "coreml":
+                # Child process by default: in-process predict() competes
+                # with the decode thread for the GIL. Same heatmaps either way.
+                if os.environ.get("RALLYCUT_COREML_INPROCESS") != "1":
+                    from coreml_process import ProcessCoreMLBackend
+                    try:
+                        return ProcessCoreMLBackend(path)
+                    except Exception as error:
+                        print(f"[backends] Core ML child process unavailable, running in-process: {error}", file=sys.stderr)
                 return CoreMLBackend(path)
             return OnnxBackend(path, require_accelerator=runtime == "auto")
         except Exception as error:  # missing wheel, unsupported op, bad artifact

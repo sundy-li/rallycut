@@ -205,8 +205,13 @@ class DetectionRun:
             finally:cap.release()
 
         self.rates=ProcessingRate()
-        self.stages=run_batches(batches(),lambda batch:detector.predict_heatmaps(
-            [[p['input'] for p in item] for item in batch]),consume,pipelined=self.pipeline)
+        try:
+            self.stages=run_batches(batches(),lambda batch:detector.predict_heatmaps(
+                [[p['input'] for p in item] for item in batch]),consume,pipelined=self.pipeline)
+        finally:
+            # Stop a backend child process (coreml_process) with the run.
+            close=getattr(getattr(detector,'backend',None),'close',None)
+            if close:close()
         return self.stages
 
 

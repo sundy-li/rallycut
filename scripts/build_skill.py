@@ -16,7 +16,7 @@ check_runtime_imports=_checker.check
 REPO=Path(__file__).resolve().parents[1]
 NAME='rallycut-video-json'
 RUNTIME_FILES=(
-    'headless.py','neural_analysis.py','backends.py','coreml_model.py','pretrained.py','visual.py','audio_features.py','table_locator.py','table_jump.py','shot_boundary.py','inference_pipeline.py','performance.py','video_decode.py','rally_state.py','rally_activity.py','rally_transits.py','rally_serves.py','play_area.py','net_geometry.py','detection_cache.py',
+    'headless.py','neural_analysis.py','backends.py','coreml_model.py','coreml_process.py','pretrained.py','visual.py','audio_features.py','table_locator.py','table_jump.py','shot_boundary.py','inference_pipeline.py','performance.py','video_decode.py','rally_state.py','rally_activity.py','rally_transits.py','rally_serves.py','play_area.py','net_geometry.py','detection_cache.py',
     'download_model.py','requirements.txt','requirements-model.txt','requirements-decode.txt',
     'vendor/blurball/network.py','vendor/blurball/config.json',
     'vendor/blurball/LICENSE.md','vendor/blurball/HRNET-LICENSE','vendor/blurball/NOTICE.md',
