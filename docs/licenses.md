@@ -1,11 +1,11 @@
 # 许可证核验清单
 
-已引入固定提交的 BlurBall 网络定义（MIT、保留 notices），并按用户请求从官方来源下载权重用于本地实测。权重未进入 Git / Go embed / 应用包；官方独立权重再分发条款仍待确认，不能把源码 MIT 当作所有权重 / 数据都已获得商用和分发许可。
+已引入固定提交的 BlurBall 网络定义（MIT、保留 notices），并按用户请求从官方来源下载权重用于本地实测。权重未进入 Git / Go embed / 应用包；维护者决定在 GitHub Release `model-blurball-v1` 原样提供下载镜像（见下表），官方独立权重再分发条款仍待确认，不能把源码 MIT 当作所有权重 / 数据都已获得商用和分发许可。
 
 | 组件 | 当前状态 | 发布前要求 |
 | --- | --- | --- |
 | BlurBall 源码 | 已固定 `2f0f5496f7ba4b5b1a36790749935121b2ce972d`，MIT；原始网络未改动 | 保留 `vision/vendor/blurball` 内 MIT / Microsoft / HRNet notices；核对最终发布包 |
-| BlurBall 官方 `blurball_best` 权重 | 已本地下载，固定 SHA-256；官方目录未提供单独权重许可 | 仅显式本地安装用于验证，不捆绑；向作者确认独立权重 / 数据条款后才可考虑商用或再分发 |
+| BlurBall 官方 `blurball_best` 权重 | 已本地下载，固定 SHA-256；官方目录未提供单独权重许可 | 不捆绑进应用 / skill / Git；维护者批准在 Release `model-blurball-v1` 原样镜像供首次下载（注明来源、论文与 SHA-256，作者要求即移除）；商用或捆绑分发仍需向作者确认 |
 | TrackNet | 未引入 | 若选择，单独核对代码、权重和训练数据许可 |
 | PyTorch 2.8.0 / 2.2.2（Intel Mac） | 用户确认后下载到应用 venv；未捆绑 wheel | 核对 BSD-style 及 wheel 的第三方动态库 notices；若打包不得只看顶层许可 |
 | Wails v2 | 依赖已锁定 | 核对其 MIT 及 Go 间接依赖的 notices |

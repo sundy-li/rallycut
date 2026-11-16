@@ -14,6 +14,8 @@ interface Backend {
   GetState(): Promise<State>;
   SetupStatus(): Promise<SetupState>;
   StartSetup(): Promise<SetupState>;
+  /** Pick a local copy of the pinned weights, verify it, then recheck. */
+  ImportModelWeights(): Promise<SetupState>;
   ImportVideo(): Promise<Project | null>;
   ImportVideos(): Promise<Project | null>;
   CreateProject(name: string): Promise<Project | null>;

@@ -229,6 +229,17 @@ export interface SetupState {
   needs_network?: boolean;
 }
 
+/** Which source the running binary was built from (backend/buildinfo). */
+export interface BuildInfo {
+  version: string;
+  /** Short git commit; empty when unknown (unstamped dev build). */
+  commit: string;
+  /** Built from a worktree with uncommitted changes. */
+  dirty: boolean;
+  /** UTC RFC 3339; empty when unknown. */
+  build_time: string;
+}
+
 export interface State {
   project: Project | null;
   project_path: string;
@@ -237,4 +248,5 @@ export interface State {
   setup?: SetupState;
   can_undo?: boolean;
   can_redo?: boolean;
+  build?: BuildInfo;
 }

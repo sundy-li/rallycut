@@ -12,6 +12,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,6 +21,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"rallycut/backend/analysis"
 	"rallycut/backend/childproc"
@@ -504,18 +506,63 @@ func (w *lineWriter) text() string {
 type weightsManifest struct {
 	Default string `json:"default_detector"`
 	Models  []struct {
-		ID     string `json:"id"`
-		URL    string `json:"weights_url"`
-		SHA256 string `json:"weights_sha256"`
-		Bytes  int64  `json:"weights_bytes"`
+		ID      string   `json:"id"`
+		URL     string   `json:"weights_url"`
+		Mirrors []string `json:"weights_mirrors"`
+		SHA256  string   `json:"weights_sha256"`
+		Bytes   int64    `json:"weights_bytes"`
 	} `json:"models"`
 }
 
 type weightsSpec struct {
-	ID     string
-	URL    string
-	SHA256 string
-	Bytes  int64
+	ID string
+	// URL is the official source; Mirrors must serve byte-identical files
+	// and are tried first.
+	URL     string
+	Mirrors []string
+	SHA256  string
+	Bytes   int64
+}
+
+// modelMirrorsEnv lists extra weight sources (comma / whitespace separated),
+// tried before the manifest sources. Every source is held to the same pinned
+// size and SHA-256, so a mirror can only fail, never install other bytes.
+const modelMirrorsEnv = "RALLYCUT_MODEL_MIRRORS"
+
+// sources returns the download order: user mirrors, manifest mirrors, then
+// the official URL as the last resort.
+func (s weightsSpec) sources() ([]string, error) {
+	var ordered []string
+	seen := map[string]bool{}
+	add := func(raw string) error {
+		raw = strings.TrimSpace(raw)
+		if raw == "" || seen[raw] {
+			return nil
+		}
+		u, err := url.Parse(raw)
+		if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" {
+			return fmt.Errorf("%s 含无效下载地址：%q", modelMirrorsEnv, raw)
+		}
+		seen[raw] = true
+		ordered = append(ordered, raw)
+		return nil
+	}
+	for _, raw := range strings.FieldsFunc(os.Getenv(modelMirrorsEnv), func(r rune) bool {
+		return r == ',' || r == ';' || unicode.IsSpace(r)
+	}) {
+		if err := add(raw); err != nil {
+			return nil, err
+		}
+	}
+	for _, raw := range append(append([]string{}, s.Mirrors...), s.URL) {
+		if err := add(raw); err != nil {
+			return nil, err
+		}
+	}
+	if len(ordered) == 0 {
+		return nil, errors.New("模型清单里没有可下载的权重")
+	}
+	return ordered, nil
 }
 
 func defaultWeights() (weightsSpec, error) {
@@ -527,7 +574,7 @@ func defaultWeights() (weightsSpec, error) {
 		if model.URL == "" || (manifest.Default != "" && model.ID != manifest.Default) {
 			continue
 		}
-		return weightsSpec{ID: model.ID, URL: model.URL, SHA256: model.SHA256, Bytes: model.Bytes}, nil
+		return weightsSpec{ID: model.ID, URL: model.URL, Mirrors: model.Mirrors, SHA256: model.SHA256, Bytes: model.Bytes}, nil
 	}
 	return weightsSpec{}, errors.New("模型清单里没有可下载的权重")
 }
@@ -552,9 +599,13 @@ func (p *Provisioner) ensureWeights(ctx context.Context) error {
 	if err := os.MkdirAll(filepath.Dir(dest), 0700); err != nil {
 		return err
 	}
-	p.update(0.84, "model", "下载模型权重…", "连接模型源")
+	sources, err := spec.sources()
+	if err != nil {
+		return err
+	}
+	p.update(0.84, "model", "下载模型权重…", fmt.Sprintf("连接模型源（共 %d 个，自动切换并续传）", len(sources)))
 	var last time.Time
-	err = downloadResumable(ctx, &http.Client{Timeout: 30 * time.Minute}, spec.URL, dest, spec.Bytes, spec.SHA256, func(written, total int64) {
+	err = downloadFromSources(ctx, newDownloadClient(), sources, dest, spec.Bytes, spec.SHA256, func(written, total int64) {
 		if time.Since(last) < 200*time.Millisecond {
 			return
 		}

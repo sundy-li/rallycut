@@ -2,7 +2,7 @@
 # Wails dev and build share build/bin. Publish an independent production copy.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-wails build -clean
+wails build -clean -ldflags "$(bash scripts/build-ldflags.sh)"
 
 if [[ "$(uname -s)" != Darwin ]]; then
   echo 'Production binary built in build/bin.'

@@ -23,7 +23,7 @@ python3 "$SKILL_DIR/scripts/rallycut.py" doctor
 python3 "$SKILL_DIR/scripts/rallycut.py" setup --download-model
 ```
 
-安装需要 `uv`，运行需要 FFmpeg / FFprobe。推理默认 MPS 优先，无 MPS 时用 CPU；不得在缺权重时静默换成模拟或传统视觉结果。权重独立再分发许可未确认，不打包权重、不上传用户视频。
+安装需要 `uv`，运行需要 FFmpeg / FFprobe。推理默认 MPS 优先，无 MPS 时用 CPU；不得在缺权重时静默换成模拟或传统视觉结果。权重独立再分发许可未确认，不打包权重、不上传用户视频；显式下载按顺序尝试项目 Release 镜像（含国内加速节点）和官方源，均按固定 SHA-256 校验。
 
 ## 新视频分析
 

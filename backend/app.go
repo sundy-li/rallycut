@@ -15,6 +15,7 @@ import (
 
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 	"rallycut/backend/analysis"
+	"rallycut/backend/buildinfo"
 	exporter "rallycut/backend/export"
 	"rallycut/backend/jobs"
 	"rallycut/backend/media"
@@ -33,6 +34,7 @@ type State struct {
 	Setup        setupenv.State   `json:"setup"`
 	CanUndo      bool             `json:"can_undo"`
 	CanRedo      bool             `json:"can_redo"`
+	Build        buildinfo.Info   `json:"build"`
 }
 
 type App struct {
@@ -130,7 +132,8 @@ func (a *App) Startup(ctx context.Context) {
 			}
 		}
 	}
-	a.log.Info("application started", "data_dir", a.dataDir, "worker_digest", vision.Digest(), "python", a.python)
+	build := buildinfo.Get()
+	a.log.Info("application started", "version", build.Version, "commit", build.Commit, "dirty", build.Dirty, "built", build.BuildTime, "data_dir", a.dataDir, "worker_digest", vision.Digest(), "python", a.python)
 	// A successful, unchanged runtime takes the local-only fast path before the
 	// frontend can see a setup screen. Never launch helpers or install on a hit.
 	a.setup.Boot(a.ctx)
@@ -171,7 +174,7 @@ func (a *App) GetState() State {
 	deps["python3"] = a.python != "" && pythonErr == nil
 	deps["opencv_numpy"] = a.visionReady
 	deps["blurball_weights_torch"] = a.modelReady
-	state := State{Project: project.Clone(a.current), ProjectPath: a.projectPath, Dependencies: deps, Error: a.initError, CanUndo: a.current != nil && len(a.history.undo) > 0, CanRedo: a.current != nil && len(a.history.redo) > 0}
+	state := State{Project: project.Clone(a.current), ProjectPath: a.projectPath, Dependencies: deps, Error: a.initError, CanUndo: a.current != nil && len(a.history.undo) > 0, CanRedo: a.current != nil && len(a.history.redo) > 0, Build: buildinfo.Get()}
 	if a.setup != nil {
 		state.Setup = a.setup.Status()
 	} else {
@@ -1044,4 +1047,30 @@ func (a *App) StartSetup() setupenv.State {
 	}
 	a.setup.Start(a.ctx)
 	return a.setup.Status()
+}
+
+// ImportModelWeights installs a locally downloaded copy of the pinned weights
+// when the official source is unreachable, then rechecks without downloading.
+// Cancelling the dialog returns the unchanged status.
+func (a *App) ImportModelWeights() (setupenv.State, error) {
+	if a.setup == nil {
+		return a.setupUnavailable(), nil
+	}
+	options := wruntime.OpenDialogOptions{Title: "选择 BlurBall 模型权重文件（blurball_best）"}
+	if home, err := os.UserHomeDir(); err == nil {
+		if info, err := os.Stat(filepath.Join(home, "Downloads")); err == nil && info.IsDir() {
+			options.DefaultDirectory = filepath.Join(home, "Downloads")
+		}
+	}
+	path, err := wruntime.OpenFileDialog(a.ctx, options)
+	if err != nil || path == "" {
+		return a.setup.Status(), err
+	}
+	if err := a.setup.ImportWeights(path); err != nil {
+		a.log.Warn("model import rejected", "error", err)
+		return a.setup.Status(), err
+	}
+	a.log.Info("model weights imported from local file")
+	a.setup.Detect(a.ctx)
+	return a.setup.Status(), nil
 }

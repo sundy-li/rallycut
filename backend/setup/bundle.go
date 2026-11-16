@@ -7,12 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
 
 	"rallycut/backend/analysis"
 	"rallycut/backend/runtimeenv"
@@ -273,7 +271,7 @@ func (p *Provisioner) provisionBundle(ctx context.Context, s BundleSpec) (string
 			return "", fmt.Errorf("未找到预制环境包。请使用完整安装器，或把 %s 与免安装 EXE 放在同一目录。私有 GitHub 不支持匿名下载。", s.Filename)
 		}
 		archive = filepath.Join(p.runtimeDir(), "downloads", s.SHA256+".zip")
-		err := downloadResumable(ctx, &http.Client{Timeout: 30 * time.Minute}, s.URL, archive, s.Bytes, s.SHA256, func(done, total int64) {
+		err := downloadResumable(ctx, newDownloadClient(), s.URL, archive, s.Bytes, s.SHA256, func(done, total int64) {
 			p.update(.04+.60*float64(done)/float64(total), "python", "下载预制环境包（支持续传）…", fmt.Sprintf("%.1f / %.1f MB", mb(done), mb(total)))
 		})
 		if err != nil {

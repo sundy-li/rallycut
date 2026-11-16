@@ -21,12 +21,15 @@ command -v wails >/dev/null 2>&1 || {
   exit 1
 }
 
-version="${VERSION:-$(git describe --tags --always --dirty 2>/dev/null || echo 0.1.0)}"
+# Only app release tags (v*) name packages; model-* mirror tags may share a commit.
+version="${VERSION:-$(git describe --tags --match 'v[0-9]*' --always --dirty 2>/dev/null || echo 0.1.0)}"
 version="${version#v}"
 version="${version//\//-}"
 out="build/release"
 mkdir -p "$out"
 rm -f "$out"/RallyCut-*.zip "$out"/RallyCut-*.exe
+# Shown in the app (setup screen, project home, settings) to identify the build.
+ldflags="$(bash scripts/build-ldflags.sh "${VERSION:-}")"
 
 # A concurrent `wails dev` can overwrite build/bin with a dev binary; never ship that.
 verify_production() {
@@ -48,7 +51,7 @@ case "$target" in
       exit 1
     }
     echo "构建 macOS 通用包（arm64 + x86_64）…"
-    wails build -clean -platform darwin/universal
+    wails build -clean -platform darwin/universal -ldflags "$ldflags"
     app="build/bin/RallyCut.app"
     verify_production "$app/Contents/MacOS/RallyCut"
     # Ad-hoc signature: required for Apple Silicon to launch an unsigned bundle.
@@ -56,7 +59,18 @@ case "$target" in
     codesign --verify --deep --strict "$app"
     artifact="$out/RallyCut-${version}-macos-universal.zip"
     ditto -c -k --sequesterRsrc --keepParent "$app" "$artifact"
+    # Keep build/release/RallyCut.app in step with the zip. Otherwise a stale
+    # copy from an earlier `just build` sits next to the fresh zip and is easy
+    # to install by mistake.
+    stage="$(mktemp -d "$PWD/$out/.rallycut-XXXXXX")"
+    trap 'rm -rf "$stage"' EXIT
+    ditto "$app" "$stage/RallyCut.app"
+    verify_production "$stage/RallyCut.app/Contents/MacOS/RallyCut"
+    codesign --verify --deep --strict "$stage/RallyCut.app"
+    rm -rf "$out/RallyCut.app"
+    mv "$stage/RallyCut.app" "$out/RallyCut.app"
     echo "产物：$artifact"
+    echo "独立应用：$out/RallyCut.app（与 zip 同一构建）"
     ;;
   windows)
     case "$(uname -s)" in
@@ -66,7 +80,7 @@ case "$target" in
         exit 1
         ;;
     esac
-    args=(-clean -platform windows/amd64)
+    args=(-clean -platform windows/amd64 -ldflags "$ldflags")
     if command -v makensis >/dev/null 2>&1; then
       args+=(-nsis)
     else

@@ -42,7 +42,18 @@ try {
     # frontend build and generates the application manifest, icons and VERSIONINFO.
     & npm --prefix frontend ci
     if ($LASTEXITCODE -ne 0) { throw '前端依赖安装失败，未构建 EXE。' }
-    & $Wails build -platform windows/amd64 -compiler $Go -m -nosyncgomod -trimpath -o $filename
+    # Stamp version / commit for the in-app build label (backend/buildinfo).
+    $version = $env:VERSION
+    if (-not $version) { $version = (& git describe --tags --match 'v[0-9]*' --abbrev=0 2>$null) }
+    if (-not $version) { $version = '0.1.0' }
+    $version = $version.TrimStart('v')
+    $commit = (& git rev-parse --short=12 HEAD 2>$null)
+    $dirty = 'false'
+    if ($commit -and (& git status --porcelain --untracked-files=no 2>$null)) { $dirty = 'true' }
+    $built = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
+    $pkg = 'rallycut/backend/buildinfo'
+    $ldflags = "-X $pkg.Version=$version -X $pkg.Commit=$commit -X $pkg.Dirty=$dirty -X $pkg.BuildTime=$built"
+    & $Wails build -platform windows/amd64 -compiler $Go -m -nosyncgomod -trimpath -ldflags $ldflags -o $filename
     if ($LASTEXITCODE -ne 0) { throw "Wails 构建失败：exit $LASTEXITCODE" }
     if (-not (Test-Path 'frontend/dist/index.html') -or
         -not (Get-ChildItem 'frontend/dist/assets' -Filter '*.js' -ErrorAction SilentlyContinue)) {

@@ -12,7 +12,8 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
-import type { RecentProject } from "../api/types";
+import type { BuildInfo, RecentProject } from "../api/types";
+import { buildLabel, buildTitle } from "../lib/build";
 import "../project-home.css";
 
 interface ProjectHomeProps {
@@ -29,6 +30,7 @@ interface ProjectHomeProps {
   onRequestDelete: (project: RecentProject) => void;
   /** Quit the desktop app; omitted in the browser preview. */
   onQuit?: () => void;
+  build?: BuildInfo;
 }
 
 function durationLabel(seconds: number) {
@@ -76,6 +78,7 @@ export default function ProjectHome({
   onDismissError,
   onRequestDelete,
   onQuit,
+  build,
 }: ProjectHomeProps) {
   const rows = Array.isArray(projects) ? projects : [];
   return (
@@ -262,7 +265,10 @@ export default function ProjectHome({
           <HardDrive size={13} />
           本地存储
         </span>
-        <span>RallyCut / Offline Editor</span>
+        <span className="build-label" title={buildTitle(build)}>
+          RallyCut
+          {buildLabel(build) ? ` · ${buildLabel(build)}` : " / Offline Editor"}
+        </span>
       </footer>
     </div>
   );

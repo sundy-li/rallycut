@@ -14,13 +14,14 @@ BRIDGE = r"""
  window.runtime={EventsOn:(name,cb)=>{const e=[name,cb];listeners.add(e);return()=>listeners.delete(e);}};
  window.__setSetup=(next)=>{setup={...setup,...next,revision:++revision};for(const [n,cb] of listeners)if(n==='setup:progress')cb(structuredClone(setup));};
  window.__emitMenu=(name)=>{for(const [n,cb] of listeners)if(n==='menu:'+name)cb();};
- const getState=()=>({setup:structuredClone(setup),project:null,project_path:'',dependencies:{},error:''});
+ const getState=()=>({setup:structuredClone(setup),project:null,project_path:'',dependencies:{},error:'',build:{version:'0.1.0-alpha.4',commit:'8bb27b772238',dirty:true,build_time:'2026-11-16T04:30:00Z'}});
  window.go={backend:{App:{
   GetState:async()=>getState(),
   ListRecentProjects:async()=>{window.__setupCalls.push('list');return[];},
   StartSetup:async()=>{window.__setupCalls.push('start');window.__setSetup({state:'running',step:'python',progress:.02,error:'',indeterminate:false});const early=structuredClone(setup);return new Promise(resolve=>{window.__resolveStart=()=>resolve(early);});},
   RefreshDependencies:async()=>{window.__setupCalls.push('check');window.__setSetup({state:'checking',step:'check',progress:0,indeterminate:true});return getState();},
   OpenProject:async()=>{window.__setupCalls.push('open');throw new Error('must not open');},
+  ImportModelWeights:async()=>{window.__setupCalls.push('import');if(window.__importFail){window.__importFail=false;throw '所选文件 SHA-256 不匹配（期望 3545206c7155…），未安装';}window.__setSetup({state:'ready',step:'ready',progress:1,indeterminate:false,python:'managed-python'});return structuredClone(setup);},
  }}};
 })();
 """
@@ -34,6 +35,7 @@ def main():
         errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
         page.add_init_script(BRIDGE);page.goto(URL);page.wait_for_load_state('networkidle')
         expect(page.get_by_role('heading',name='正在检查运行环境')).to_be_visible()
+        expect(page.locator('.setup-platform')).to_contain_text('v0.1.0-alpha.4 · 8bb27b772238 · 含未提交修改')
         expect(page.locator('.project-home,.app-shell')).to_have_count(0)
         assert page.evaluate('window.__setupCalls')==[]
         page.evaluate("window.__setSetup({state:'required',indeterminate:false,checks:[{id:'python',label:'Python',ready:false},{id:'media',label:'FFmpeg',ready:true}]})")
@@ -75,6 +77,7 @@ def main():
         expect(page.get_by_role('heading',name='正在准备运行环境')).to_be_visible()
         page.evaluate("window.__setSetup({state:'ready',step:'ready',progress:1,indeterminate:false,python:'managed-python'});window.__resolveStart()")
         expect(page.locator('.project-home')).to_be_visible()
+        expect(page.locator('.project-home-footer')).to_contain_text('8bb27b772238')
         expect(page.locator('.setup-screen')).to_have_count(0)
         assert page.evaluate("window.__setupCalls.filter(x=>x==='start').length")==2
         assert 'open' not in page.evaluate('window.__setupCalls')
@@ -87,9 +90,23 @@ def main():
         expect(page.locator('.setup-steps li').first).to_have_class('done')
         page.screenshot(path=str(ARTIFACTS/'installed-only-model.png'),full_page=True)
         expect(page.locator('.project-home,.app-shell')).to_have_count(0)
+        # Official model source unreachable: a local copy can be imported, and a
+        # rejected file keeps the gate closed with the reason next to the button.
+        page.evaluate("window.__setSetup({state:'failed',step:'model',error:'下载模型权重失败：下载中断，已保留进度，可重试：EOF'})")
+        importButton=page.get_by_role('button',name='从本地文件导入模型')
+        expect(importButton).to_be_enabled()
+        expect(page.locator('.setup-model-import')).to_contain_text('blurball_best')
+        page.evaluate('window.__importFail=true')
+        importButton.click()
+        expect(page.locator('.setup-model-import [role=alert]')).to_contain_text('SHA-256 不匹配')
+        expect(page.locator('.project-home,.app-shell')).to_have_count(0)
+        page.screenshot(path=str(ARTIFACTS/'model-import-rejected.png'),full_page=True)
+        importButton.click()
+        expect(page.locator('.project-home')).to_be_visible()
+        assert page.evaluate("window.__setupCalls.filter(x=>x==='import').length")==2
         assert not errors,errors
         browser.close()
-    print('PASS: consent required, unavailable workspace/shortcuts, real phase progress, failure/recheck/retry, and stale RPC cannot override ready')
+    print('PASS: consent required, unavailable workspace/shortcuts, real phase progress, failure/recheck/retry, local model import, and stale RPC cannot override ready')
     print(f'Artifacts: {ARTIFACTS}')
 
 if __name__=='__main__':main()

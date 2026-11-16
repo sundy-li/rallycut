@@ -9,6 +9,16 @@
       "commit": "2f0f5496f7ba4b5b1a36790749935121b2ce972d",
       "source_license": "MIT; retained NTT / Microsoft / HRNet notices under vision/vendor/blurball",
       "weights_url": "https://cloud.cs.uni-tuebingen.de/public.php/dav/files/6Z8TpM3sXRKHzGC/blurball_best",
+      "weights_mirrors": [
+        "https://edgeone.gh-proxy.com/https://github.com/sundy-li/rallycut/releases/download/model-blurball-v1/blurball_best",
+        "https://ghfast.top/https://github.com/sundy-li/rallycut/releases/download/model-blurball-v1/blurball_best",
+        "https://github.com/sundy-li/rallycut/releases/download/model-blurball-v1/blurball_best",
+        "https://hk.gh-proxy.com/https://github.com/sundy-li/rallycut/releases/download/model-blurball-v1/blurball_best",
+        "https://gh-proxy.org/https://github.com/sundy-li/rallycut/releases/download/model-blurball-v1/blurball_best",
+        "https://ghfile.geekertao.top/https://github.com/sundy-li/rallycut/releases/download/model-blurball-v1/blurball_best",
+        "https://cloud.cs.uni-tuebingen.de/index.php/s/6Z8TpM3sXRKHzGC/download?path=%2F&files=blurball_best"
+      ],
+      "weights_mirror_policy": "Download order: RALLYCUT_MODEL_MIRRORS, then weights_mirrors in order, then the official weights_url as last resort. Maintainer-approved byte-identical mirror at GitHub Release model-blurball-v1 (not an app release), reached directly and through third-party GitHub download accelerators for mainland China; size + SHA-256 decide, never the source. Weights stay out of the app, skill and Git; remove the release and these entries if the authors object. Not cleared for commercial redistribution.",
       "weights_sha256": "3545206c7155194ea654899d33579c88c9fd8e82c632cbdbae3b0c0ec3f2985f",
       "weights_bytes": 6156034,
       "weights_license": "Independent weight redistribution terms not explicitly stated on official share; not cleared for bundling/commercial redistribution",

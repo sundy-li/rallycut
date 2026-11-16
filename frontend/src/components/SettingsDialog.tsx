@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Cpu, Gauge, Scissors, Settings, ShieldCheck, X } from "lucide-react";
-import type { ExportSettings, Rules } from "../api/types";
+import type { BuildInfo, ExportSettings, Rules } from "../api/types";
+import { buildLabel, buildTitle } from "../lib/build";
 import EncodingOptions from "./EncodingOptions";
 import { SKIP_STEPS } from "../playback";
 import { shortcutKeys } from "../lib/shortcuts";
@@ -20,6 +21,7 @@ interface Props {
   onSkipStep: (step: number) => void;
   onClose: () => void;
   onRecheckEnvironment?: () => void;
+  build?: BuildInfo;
 }
 
 const TABS: { id: SettingsTab; label: string; icon: typeof Cpu }[] = [
@@ -101,6 +103,13 @@ export default function SettingsDialog(props: Props) {
                 >
                   完整重新检查运行环境
                 </button>
+                <h3>软件版本</h3>
+                <p
+                  className="settings-version build-label"
+                  title={buildTitle(props.build)}
+                >
+                  {buildLabel(props.build) || "未知"}
+                </p>
               </>
             )}
           </div>

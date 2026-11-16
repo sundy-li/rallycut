@@ -53,6 +53,16 @@ OpenCV 固定 4.11.0.86。不支持的系统／架构会明确失败，不安装
 - 失败不显示 100%，不放行；连续点击只启动一个准备任务。关闭应用会取消准备并回收子进程，下次重新检测，可重用已完成且通过校验的文件。
 - 状态带单调递增 `revision`，前端忽略迟到的旧状态，防止旧的 `running` 响应覆盖已完成状态。
 - 下载源不可达时仍会失败；自动准备不等于内置国内镜像、断网安装或有速度保证。下载服务可能记录访问日志。
+- 模型权重的下载源（`backend/setup/resume.go` `downloadFromSources`，Python 侧 `vision/download_model.py` 同口径）：
+  - 顺序：`RALLYCUT_MODEL_MIRRORS`（逗号 / 空白分隔的 http(s) 地址，开发 / CI / skill 用；Finder 启动的桌面版读不到 shell 环境变量）→ 清单 `weights_mirrors` 按序 → 官方 `weights_url`（Nextcloud WebDAV）兜底。`weights_mirrors` 当前为：维护者批准的 GitHub Release `model-blurball-v1` 镜像，经国内 GitHub 加速节点 `edgeone.gh-proxy.com`、`ghfast.top`，GitHub 直链，再经 `hk.gh-proxy.com`、`gh-proxy.org`、`ghfile.geekertao.top`；最后是官方 Nextcloud 的分享下载入口（同一主机）。
+  - 加速节点是第三方免费服务，会失效或限流，内容由固定 SHA-256 把关，不被信任。本次（2026-11，本机经代理与直连）实测上述 6 个 GitHub 来源都下载成功且哈希一致；`ghproxy.net`、`gh.dpik.top` 可用但 16–20 秒偏慢未收录；`gh.llkk.cc`（522）、`gh.ddlc.top`（429）、`ghps.cc`（403）、`ghproxy.cc`（证书不符）、`github.moeyy.xyz`、`hub.gitmirror.com`、`gh.xmly.dev`、`github.tbedu.top`（握手断开）、`ghproxy.homeboyc.cn`（403）不可用。官方 Nextcloud 两个入口均 `EOF`。维护时用 `RALLYCUT_MODEL_SOURCES_E2E=1 go test ./backend/setup -run TestRealWeightSources -v` 逐个探测，再同步清单与 `download_model.WEIGHTS_MIRRORS`。
+  - 每轮依次尝试所有可用来源，共 4 轮，轮间退避 1 / 2 / 4 秒。连接 15 秒、TLS 握手 15 秒、响应头 30 秒超时；正文 30 秒无数据视为卡住并换源。`.part` 跨来源、跨重启续传，`Content-Range` 必须与固定大小吻合。
+  - 返回 404 / 403 等永久错误、错误 `Content-Range`、压缩编码、超长内容，或单独完整提供却哈希不符的来源，本次不再重试；408 / 429 / 5xx / 网络错误继续轮换。错误信息按主机列出每个来源的最后原因，不含路径和查询参数。
+  - 任何来源都必须提供与固定大小和 SHA-256 完全一致的文件，来源本身不被信任。
+  - 加速节点或代理常在出错时返回 HTTP 200 的网页：`Content-Length` 与剩余大小不符、`Content-Type: text/html`、或正文提前干净结束的来源，本次不再重试，且不会截断其他来源已下载的 `.part`。
+  - 镜像许可：权重独立再分发许可未明确（见 [licenses.md](licenses.md)）。维护者决定只在独立的 Release `model-blurball-v1`（预发布、非 latest、不触发应用发布工作流）原样提供 `blurball_best` 与 `.sha256`，附来源、论文和移除承诺；不编进二进制 / 安装包 / skill / Git，`release.yml` 的权重拦截保持不变。作者反对时删除该 Release 与清单项即可。
+- 所有来源都不可达时（例如官方服务器整体超时、本地代理握手 `EOF`），准备页在模型未就绪时提供 **“从本地文件导入模型”**：选择框默认打开“下载”文件夹；后端只读源文件，按固定大小与 SHA-256 校验写入的字节，通过才原子替换 `models/weights/blurball_best.pth`，随后重新检测（不联网）。文件名不参与判断；准备 / 检测进行中拒绝导入。实现见 `backend/setup/import.go` 与 `App.ImportModelWeights`。
+- 清单内容参与 readiness 记录的键，修改 `models/manifest.json` 后首次启动会完整检测一次。
 
 ## 维护入口与验证
 

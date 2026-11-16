@@ -2087,6 +2087,23 @@ body:has(.setup-screen) {
 .setup-actions .button {
   min-height: 40px;
 }
+.setup-model-import {
+  margin-top: 16px;
+  color: #93a089;
+  font-size: 11px;
+  line-height: 1.9;
+}
+.setup-model-import p {
+  margin: 0 0 10px;
+}
+.setup-model-import code {
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.setup-model-import [role="alert"] {
+  margin: 10px 0 0;
+  color: #f0a58d;
+}
 .setup-diagnostics {
   margin: 14px 0;
   color: #b9c9b0;
@@ -2798,4 +2815,16 @@ body:has(.setup-screen) {
   text-decoration: underline;
   text-underline-offset: 2px;
   font-size: inherit;
+}
+
+/* Build identity: version · commit; selectable so users can copy it. */
+.build-label {
+  user-select: text;
+  font-variant-numeric: tabular-nums;
+}
+.settings-version {
+  margin: 0;
+  color: #b9c9b0;
+  font-size: 12px;
+  user-select: text;
 }

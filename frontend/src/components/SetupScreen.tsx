@@ -3,11 +3,13 @@ import {
   Check,
   CircleAlert,
   Download,
+  FileInput,
   LoaderCircle,
   RotateCw,
   ShieldCheck,
 } from "lucide-react";
-import type { SetupState } from "../api/types";
+import type { BuildInfo, SetupState } from "../api/types";
+import { buildLabel, buildTitle } from "../lib/build";
 import { setupPercent, setupSteps } from "../lib/setup";
 
 interface Props {
@@ -15,15 +17,35 @@ interface Props {
   busy?: boolean;
   onStart: () => void;
   onRecheck: () => void;
+  /** Install a locally downloaded copy of the pinned weights; rejects on error. */
+  onImportModel?: () => Promise<void>;
+  build?: BuildInfo;
 }
+
+const MODEL_SOURCE_PAGE =
+  "https://github.com/sundy-li/rallycut/releases/tag/model-blurball-v1";
 
 export function SetupScreen({
   state,
   busy = false,
   onStart,
   onRecheck,
+  onImportModel,
+  build,
 }: Props) {
   const [copyStatus, setCopyStatus] = useState("");
+  const [importStatus, setImportStatus] = useState("");
+  const importModel = async () => {
+    if (!onImportModel) return;
+    setImportStatus("");
+    try {
+      await onImportModel();
+    } catch (e) {
+      setImportStatus(
+        `导入失败：${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  };
   const copyError = async () => {
     try {
       await navigator.clipboard.writeText(
@@ -40,6 +62,9 @@ export function SetupScreen({
   const failed = state.state === "failed";
   const blocked = busy || checking || running;
   const installed = state.runtime_mode === "installed";
+  const modelMissing =
+    state.checks?.some((c) => c.id === "model" && !c.ready) ||
+    (failed && state.step === "model");
   const modelOnly =
     installed &&
     state.checks?.filter((c) => ["python", "media", "packages"].includes(c.id))
@@ -86,6 +111,12 @@ export function SetupScreen({
         </div>
         <div className="setup-platform">
           {state.platform || "正在识别当前平台"}
+          {buildLabel(build) && (
+            <span className="build-label" title={buildTitle(build)}>
+              {" · "}
+              {buildLabel(build)}
+            </span>
+          )}
         </div>
         <h1 id="setup-title">{title}</h1>
         <p className="setup-lead">
@@ -238,6 +269,27 @@ export function SetupScreen({
                 重新检测
               </button>
             </div>
+            {modelMissing && onImportModel && (
+              <div className="setup-model-import">
+                <p>
+                  已自动依次尝试项目 Release 镜像（含国内加速节点）和 BlurBall
+                  作者的官方源，并续传。都无法连接时，可在能访问的网络或设备上从{" "}
+                  <code>{MODEL_SOURCE_PAGE}</code> 下载{" "}
+                  <code>blurball_best</code>
+                  ，或向已安装的同事拷贝，再从本地导入；导入同样校验文件大小与
+                  SHA-256，不会移动原文件。
+                </p>
+                <button
+                  className="button ghost"
+                  disabled={blocked}
+                  onClick={() => void importModel()}
+                >
+                  <FileInput size={14} />
+                  从本地文件导入模型
+                </button>
+                {importStatus && <p role="alert">{importStatus}</p>}
+              </div>
+            )}
           </>
         )}
         <p className="setup-blocked-note">

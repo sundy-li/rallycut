@@ -81,7 +81,7 @@ UI 回归入口是 `tests/ui/test_workbench.py`，需 Playwright / Chrome 和其
 - 当前默认 MPS 优先、CPU 可用，FP32 / batch=4 / 有界流水线；不要求 CUDA。更大 batch 或 FP16 不一定更快，FP16 仅显式选择。
 - VideoToolbox **解码**为显式实验路径：PyAV 与 OpenCV 颜色转换不完全一致，可能改变候选；不能默默切换。必须核验硬解确实启用，不能静默软件回退后仍标“硬解”。
 - 权重按固定大小 / SHA-256 校验，`weights_only=True`、严格 `state_dict` 加载。缺模型 / 依赖或推理失败必须报错，不退回 mock 或假定时间窗口。
-- 网络代码与 notices 保留来源；权重独立再分发许可未明确，不得打进应用 / skill / Git，不能把公开下载等同于可商业分发。
+- 网络代码与 notices 保留来源；权重独立再分发许可未明确，不得打进应用 / skill / Git，不能把公开下载等同于可商业分发。唯一例外是维护者批准的下载镜像：GitHub Release `model-blurball-v1`（非应用版本，原样 `blurball_best`），经清单 `weights_mirrors` 里的国内 GitHub 加速节点和直链下载，官方 Nextcloud 兜底；任何来源都按固定大小 / SHA-256 校验。作者反对时删除该 Release 与对应清单项。不得扩大为编进二进制或安装包。下载源与重试见 `docs/first-run-setup.md`；加速节点会失效，用 `RALLYCUT_MODEL_SOURCES_E2E=1 go test ./backend/setup -run TestRealWeightSources -v` 逐个探测。
 - 素材 FPS、GPU 前向 FPS、画面流水线 FPS、含准备的任务均速分别记录；并行阶段耗时不能相加当总耗时。
 
 ## 分段、编辑与导出

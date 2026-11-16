@@ -410,6 +410,18 @@ export default function App() {
       setSetupRetrying(false);
     }
   };
+  // Errors propagate so the setup screen shows them next to the import button
+  // instead of replacing the download failure that explains why it is needed.
+  const importModelWeights = async () => {
+    if (setupRetrying) return;
+    setSetupRetrying(true);
+    try {
+      const next = await api().ImportModelWeights();
+      setState((prev) => ({ ...prev, setup: mergeSetup(prev.setup, next) }));
+    } finally {
+      setSetupRetrying(false);
+    }
+  };
   const refresh = useCallback(async () => {
     if (!isDesktop()) {
       setLoaded(true);
@@ -1332,6 +1344,7 @@ export default function App() {
       <>
         {settingsOpen && (
           <SettingsDialog
+            build={state.build}
             hasProject={Boolean(p)}
             disabled={disabled}
             rules={p?.rules ?? defaultRules}
@@ -1434,6 +1447,8 @@ export default function App() {
         busy={setupRetrying}
         onStart={() => void retrySetup()}
         onRecheck={() => void retrySetup(true)}
+        onImportModel={importModelWeights}
+        build={state.build}
       />
     );
   }
@@ -1459,6 +1474,7 @@ export default function App() {
           }}
           onRequestDelete={setPendingDelete}
           onQuit={() => void requestQuit()}
+          build={state.build}
         />
         {newProjectOpen && (
           <div

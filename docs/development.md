@@ -43,8 +43,11 @@ just test-go
 just test-skill
 just skill
 just build                # 独立生产版 build/release/RallyCut.app
+just package              # 同一构建：build/release 下的 zip 与 RallyCut.app
 just run
 ```
+
+`just build` / `just package` / `scripts/build-windows.ps1` 经 `scripts/build-ldflags.sh` 把版本（`VERSION` 或最近的 `v*` 标签）、12 位提交哈希、是否含未提交修改和构建时间写入二进制（`backend/buildinfo`）。准备页、项目首页页脚和“设置 → 运行环境”显示 `v版本 · 提交 · 含未提交修改`，悬停显示构建时间，启动日志 `application started` 也记录同样信息；没有写入时（`wails dev`）显示“开发版”。安装到 `/Applications` 时先删除旧包再 `ditto build/release/RallyCut.app /Applications/RallyCut.app`；`cp -rf` 会把新文件合并进旧 bundle。
 
 `wails dev` 会覆盖 `build/bin`。不要从该路径拿开发包发布，也不要与同一工作树的生产打包并行。当前有开发实例时在 CI 或独立工作树打包，不要杀用户的开发进程。
 
