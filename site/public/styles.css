@@ -32,6 +32,7 @@ a:hover {text-decoration:underline}
 .site-header,.site-footer {padding-inline:var(--gutter); display:flex; align-items:center; flex-wrap:wrap; justify-content:space-between; gap:.75rem}
 .site-header {position:sticky; top:0; z-index:2; padding-block:.8rem; background:var(--paper); border-bottom:1px solid var(--line)}
 .brand {display:inline-flex; align-items:center; gap:.55rem; font-size:1.35rem; font-weight:750; letter-spacing:-.04em; text-decoration:none; color:var(--ink)}
+.site-header nav [aria-current] {text-decoration:underline; text-decoration-thickness:2px}
 .brand img {border-radius:.45rem}
 .beta,.version-line,.microcopy,.art-caption,.cut-strip figcaption,.pointer-number,.eyebrow {font-family:var(--mono); font-size:.77rem; letter-spacing:.025em}
 .beta,.lang-switch {border:1px solid var(--line); border-radius:2rem; padding:.2rem .6rem}
@@ -111,7 +112,6 @@ summary {cursor:pointer; font-weight:650; color:var(--court)}
 .prose table {display:block; border-collapse:collapse}
 .prose th,.prose td {padding:.5rem .7rem; border:1px solid var(--line); text-align:start}
 @media (max-width:48rem) {
-  .nav-optional {display:none}
   .hero,.workbench-heading,.new-release,.export-showcase,.download,.docs-layout {grid-template-columns:minmax(0,1fr); gap:1.65rem}
   .workbench-pointers {grid-template-columns:minmax(0,1fr); gap:1rem}
   .workbench-pointers li+li {border-top:1px solid var(--line); padding-top:1rem}
@@ -123,7 +123,7 @@ summary {cursor:pointer; font-weight:650; color:var(--court)}
   .site-header .beta,.nav-github span {display:none}
   .brand {font-size:1.1rem}
   .brand img {width:1.65rem; height:1.65rem}
-  .site-header nav {gap:.65rem}
+  .site-header nav {flex-basis:100%; gap:.35rem .85rem}
   .site-header {padding-block:.6rem}
   .nav-link {font-size:.78rem}
   .hero-actions {gap:.85rem}
