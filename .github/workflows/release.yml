@@ -8,7 +8,7 @@ on:
       version:
         description: 'Prerelease version without v (build only; tags publish)'
         required: true
-        default: '0.1.0-alpha.4'
+        default: '0.1.0-alpha.5'
         type: string
 
 permissions:
@@ -105,7 +105,10 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: macos
-          path: build/release/*
+          path: |
+            build/release/RallyCut-*-macos-universal.zip
+            build/release/rallycut-skill-*.skill
+            build/release/SHA256SUMS-macos.txt
           if-no-files-found: error
 
   publish:

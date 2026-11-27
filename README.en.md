@@ -50,7 +50,7 @@ Then just ask, for example, “find the rallies in ~/Videos/match.mp4 and export
 
 ## Getting started
 
-1. [Download the installer](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.4) and follow the [install guide](docs/getting-started.en.md) for first-run setup.
+1. [Download the installer](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.5) and follow the [install guide](docs/getting-started.en.md) for first-run setup.
 2. Create a project → import a video → analyze and review the rallies.
 3. In the export bar, tick “Ball trajectory” and “Rally numbers”, then export.
 

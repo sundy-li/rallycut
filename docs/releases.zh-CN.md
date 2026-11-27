@@ -2,58 +2,24 @@
 
 中文 · [English](releases.en.md)
 
-## v0.1.0-alpha.4 · 中英文文档与公开下载
+## v0.1.0-alpha.5 · 项目交给 AI 剪辑，Apple Silicon 本地分析加速
 
-[打开本版 GitHub Release](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.4)。本版统一提供 **macOS 通用包、Windows x64 完整安装器和免安装备用包**，附 SHA-256 校验清单。仓库和安装包已公开，无需邀请或登录即可下载；网站只提供下载入口，不托管原片或项目。
+[下载本版](https://github.com/sundy-li/rallycut/releases/tag/v0.1.0-alpha.5)
 
-### 本版变化
-
-- **剪辑和分析功能与 v0.1.0-alpha.3 相同**，本版主要更新文档和下载入口；已在用 alpha.3 的项目可以直接继续用。
-- **英文使用指南**：安装、快速开始、常见问题和本版更新都有英文版，按“英文名（中文按钮名）”对照界面。应用界面目前仍只有中文。
-- **新网站地址**：https://rallycut-app.pages.dev/ ，英文版在 `/en/`。顶部导航可切换中英文，并直达 GitHub 仓库。旧地址 `rallycut-byc.pages.dev` 不再更新。
-- **源码与安装包公开**：GitHub 仓库已改为公开，浏览源码和下载安装包都不需要邀请或登录。
-- **中文文档精简**：更新说明和常见问题去掉了工程术语，改成直接的使用说明。
-- **Windows 升级后检查一次环境**：运行环境标识随版本更新，从 alpha.3 升级后第一次打开会完整检查一次，之后照常直接进入项目列表。
-
-以下是 v0.1.0-alpha.3 起就有、本版继续保留的内容。
-
-### 安装与启动
-
-- **Windows 安装时就准备好依赖**：完整安装器自带 Python、分析依赖、FFmpeg／FFprobe 和所需运行库，不用自己安装 Python、改 PATH 或运行 pip。
-- **模型单独下载**：模型权重不打进安装包。首次使用缺模型时，点击确认后才下载约 6 MB 并自检；已准备过且校验通过的模型会直接复用。
-- **再次打开直接进入软件**：Windows 首次检查通过后会记住结果，之后环境不变就不再显示准备页。升级后会重新完整检查一次。
-- **不再弹出黑色命令行窗口**：后台命令静默运行，出错时仍保留错误信息；你主动打开的文件选择框和资源管理器照常显示。
-- **macOS 首次准备向导**：先在本机检测，缺依赖时由你点击准备，下载应用私有环境与模型；不需要手动安装 Python／FFmpeg，也不改动系统 Python。
-
-### Windows 使用与可靠性
-
-- 中文、空格、符号、emoji 路径的视频可以直接导入，文件名不再变成 `?`；共享盘路径原样保留，但仍需系统本身能访问。
-- 只运行一个实例：再次打开会切回已有窗口。
-- 窗口按屏幕可用区域和缩放比例调整尺寸，减少小屏、高缩放或任务栏占用时窗口超出屏幕的情况。
-- 强制关闭软件后，后台分析进程也会一起退出，减少残留。
-
-### 剪辑功能
-
-- 自动生成候选回合、预览球轨迹；导出 MP4 时可叠加球轨迹与回合编号。
-- 双击修正起止点、手动添加回合、撤销／重做、设置与快捷键面板。
-- 重新分析保留人工添加和修正的回合；导出时可选人工优先、分析优先、合并或按先后覆盖。覆盖只决定成片内容，不删除项目回合，也不覆盖原片或已有成片。
-- 找不到球桌也能分析球；缺少可靠的球桌位置时，不会凭空判断触网或出界。自动结果仍需复核。
+- 在导出栏点“复制给 AI”，把项目路径和命令交给装有 `rallycut` skill 的 agent。无需重新分析，就可以先看剪辑计划，再按回合、数量和前后缓冲导出。
+- Apple Silicon 在本机转换并校验 Core ML 模型，通过后使用子进程推理；不可用时继续使用 MPS。长视频的实时回合预览不再频繁全量重算。这些是速度优化，不代表切分准确率提高。
+- 模型下载支持镜像和重试，始终校验大小和 SHA-256；模型权重不在应用和 skill 包内。准备页和设置可查看构建版本。
+- 修复导出叠加开关被重置的问题。桌面端可在系统保存对话框确认后替换已有成片；skill 需要显式 `--overwrite`。原片始终不能覆盖。
 
 ### 下载与升级
 
-| 系统／用途 | 附件 |
+| 用途 | Release 附件 |
 | --- | --- |
-| macOS Apple Silicon／Intel | `RallyCut-0.1.0-alpha.4-macos-universal.zip` |
-| Windows 首选 | `RallyCut-0.1.0-alpha.4-windows-amd64-setup.exe` |
-| Windows 免安装备用 | `RallyCut-0.1.0-alpha.4-windows-amd64.exe`，同时下载 `RallyCut-runtime-windows-amd64.zip` 放在 EXE 同目录 |
-| 文件校验 | `SHA256SUMS-macos.txt`、`SHA256SUMS-windows.txt`；`runtime-bundle.json` 是运行环境清单 |
+| macOS（Apple Silicon / Intel） | `RallyCut-0.1.0-alpha.5-macos-universal.zip` |
+| Windows x64（推荐） | `RallyCut-0.1.0-alpha.5-windows-amd64-setup.exe` |
+| Windows x64 免安装 | `RallyCut-0.1.0-alpha.5-windows-amd64.exe` 和 `RallyCut-runtime-windows-amd64.zip` 放在同一目录 |
+| Agent skill | `rallycut-skill-0.1.0-alpha.5.skill`，校验值在 `SHA256SUMS-macos.txt` |
 
-先退出旧软件、备份项目，再安装或替换应用；**不用卸载或删除用户数据目录**。保留原视频的名称与路径，先用短素材试用，再继续重要项目。更早的测试版下载已撤下，旧链接不再可用；用户项目和视频不受影响。
+升级前退出旧应用、备份项目，无需删除用户数据。安装包未正式签名或经 Apple 公证；Windows 包不是原生 ARM64。自动识别的回合仍需人工复核。
 
-### 已验证与尚未验证
-
-每次发布前都在 macOS 和 Windows x64 的自动化环境中检查安装／卸载、模型真实运行、中文路径导入、预览、导出和重复启动，以本版 Release 的构建结果为准。
-
-尚未实机验收：Windows 11 ARM 虚拟机、原生文件选择框点击、Mac 共享盘（`\\Mac\Home`）、多显示器操作和 Intel Mac。Windows 包是 x64，在 ARM 上靠系统模拟运行，不承诺加速效果。安装包尚未正式签名／Apple 公证，系统拦截时请先确认来源，不要关闭系统安全保护。模型的再分发／商用条款仍在确认。
-
-[安装与使用](getting-started.zh-CN.md) · [常见问题与反馈](faq.zh-CN.md)
+[安装指南](getting-started.zh-CN.md) · [常见问题](faq.zh-CN.md)

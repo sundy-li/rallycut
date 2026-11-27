@@ -50,6 +50,8 @@ function gifDurationMs(data) {
   }
   assert.fail('missing GIF trailer');
 }
+// Count content lines, not the blank lines Markdown uses between blocks.
+const contentLines = text => text.split('\n').filter(line => line.trim()).length;
 const output = await files(dist);
 const htmlFiles = output.filter(f => f.endsWith('.html'));
 const isEnglish = (filename) => path.relative(dist, filename).startsWith(`en${path.sep}`);
@@ -134,7 +136,7 @@ test('real demo is accessible, opt-in to load, and within static-host file limit
 });
 test('README stays concise and its demo and release links exist', async () => {
   const readme = await fs.readFile(new URL('../../README.md', import.meta.url), 'utf8');
-  assert.ok(readme.split('\n').length <= 50);
+  assert.ok(contentLines(readme) <= 50);
   assert.ok(readme.includes(config.releaseUrl));
   assert.ok(readme.includes('源码和安装包已公开'));
   assert.equal(/私有种子测试|GitHub 下载需要仓库权限/.test(readme), false);
@@ -195,7 +197,7 @@ test('English README mirrors the Chinese README demo order and links', async () 
   const zh = await fs.readFile(new URL('../../README.md', import.meta.url), 'utf8');
   assert.ok(zh.includes('[English](README.en.md)'));
   assert.ok(readme.includes('[中文](README.md)'));
-  assert.ok(readme.split('\n').length <= 50);
+  assert.ok(contentLines(readme) <= 50);
   assert.ok(readme.includes(config.releaseUrl));
   assert.ok(readme.indexOf('rallycut-workbench-preview.gif') < readme.indexOf('rallycut-preview.gif'));
   assert.ok(/<details>\s*<summary>More:[\s\S]*rallycut-preview\.gif[\s\S]*<\/details>/.test(readme));
